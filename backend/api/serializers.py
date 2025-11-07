@@ -65,8 +65,21 @@ class ConnectionSerializer(serializers.ModelSerializer):
 class MessageSerializer(serializers.ModelSerializer):
     sender = UserSerializer(read_only=True)
     receiver = UserSerializer(read_only=True)
+    file_url = serializers.SerializerMethodField()
+    file_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
-        fields = ('id', 'sender', 'receiver', 'content', 'created_at', 'read')
-        read_only_fields = ('sender', 'created_at')
+        fields = ('id', 'sender', 'receiver', 'content', 'file', 'file_url', 'file_name', 'created_at', 'read')
+        read_only_fields = ('sender', 'created_at', 'file_url', 'file_name')
+
+    def get_file_url(self, obj):
+        if obj.file:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.file.url)
+            return obj.file.url
+        return None
+
+    def get_file_name(self, obj):
+        return obj.file.name.split('/')[-1] if obj.file else None

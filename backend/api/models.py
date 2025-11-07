@@ -94,6 +94,7 @@ class Message(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='messages_sent')
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='messages_received')
     content = models.TextField()
+    file = models.FileField(upload_to='chat_files/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     read = models.BooleanField(default=False)
 

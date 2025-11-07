@@ -84,7 +84,13 @@ def login_user(request):
         
         print(f"Attempting login for user: {username}")  # Debug print
         
-        user = authenticate(request, username=username, password=password)
+        # Try case-insensitive username lookup
+        user_obj = User.objects.filter(username__iexact=username).first()
+        if user_obj:
+            # Use the actual username for authentication
+            user = authenticate(request, username=user_obj.username, password=password)
+        else:
+            user = None
         
         if user is not None:
             token, _ = Token.objects.get_or_create(user=user)

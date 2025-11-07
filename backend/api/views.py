@@ -25,13 +25,96 @@ from .utils_safe import (
     find_matching_users_for_skills
 )
 
+class UserProfileView(APIView):
+    """Handle GET and PATCH/PUT on /api/profile/ for current user"""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """GET /api/profile/ - Return the current user's profile"""
+        profile = UserProfile.objects.filter(user=request.user).first()
+        if profile:
+            serializer = UserProfileSerializer(profile)
+            return Response(serializer.data)
+        return Response({'error': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def post(self, request):
+        """POST /api/profile/ - Update current user's profile (partial)"""
+        profile = UserProfile.objects.filter(user=request.user).first()
+        if not profile:
+            return Response({'error': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = UserProfileSerializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request):
+        """PATCH /api/profile/ - Partial update current user's profile"""
+        profile = UserProfile.objects.filter(user=request.user).first()
+        if not profile:
+            return Response({'error': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = UserProfileSerializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request):
+        """PUT /api/profile/ - Full update current user's profile"""
+        profile = UserProfile.objects.filter(user=request.user).first()
+        if not profile:
+            return Response({'error': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = UserProfileSerializer(profile, data=request.data, partial=False)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserProfileDetailView(APIView):
+    """Handle GET/PATCH/PUT on /api/profile/{id}/ for specific profile"""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        profile = get_object_or_404(UserProfile, pk=pk, user=request.user)
+        serializer = UserProfileSerializer(profile)
+        return Response(serializer.data)
+
+    def patch(self, request, pk):
+        profile = get_object_or_404(UserProfile, pk=pk, user=request.user)
+        serializer = UserProfileSerializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, pk):
+        profile = get_object_or_404(UserProfile, pk=pk, user=request.user)
+        serializer = UserProfileSerializer(profile, data=request.data, partial=False)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 class UserProfileViewSet(viewsets.ModelViewSet):
+    """Legacy ViewSet - keeping for compatibility"""
     serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
-    http_method_names = ['get', 'post', 'patch', 'put', 'head', 'options']  # Added 'post'
 
     def get_queryset(self):
         return UserProfile.objects.filter(user=self.request.user)
+    
+    def get_object(self):
+        """Override to return current user's profile when no pk is provided"""
+        # Check if pk is in the URL kwargs
+        if self.kwargs.get('pk'):
+            return super().get_object()
+        # Otherwise return the current user's profile
+        return self.get_queryset().first()
     
     def list(self, request):
         """GET /api/profile/ - Return the current user's profile"""
@@ -42,7 +125,20 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         return Response({'error': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
 
     def create(self, request, *args, **kwargs):
-        """Override create to handle updates (POST will act as PATCH)"""
+        """POST /api/profile/ - Handle updates (POST acts as PATCH for compatibility)"""
+        profile = self.get_queryset().first()
+        if not profile:
+            return Response({'error': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.get_serializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['patch'], url_path='')
+    def update_current_profile(self, request):
+        """PATCH /api/profile/ - Update current user's profile"""
         profile = self.get_queryset().first()
         if not profile:
             return Response({'error': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -54,18 +150,23 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
-        """PUT/PATCH /api/profile/{pk}/"""
+        """PUT /api/profile/{pk}/ - Update specific profile by ID"""
         profile = self.get_object()
-        partial = request.method == 'PATCH'
-        serializer = self.get_serializer(profile, data=request.data, partial=partial)
+        serializer = self.get_serializer(profile, data=request.data, partial=False)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def partial_update(self, request, *args, **kwargs):
-        """PATCH /api/profile/{pk}/"""
-        return self.update(request, *args, **kwargs)
+        """PATCH /api/profile/{pk}/ - Partial update with ID"""
+        profile = self.get_object()
+        serializer = self.get_serializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class SkillViewSet(viewsets.ModelViewSet):
     serializer_class = SkillSerializer
@@ -283,6 +384,54 @@ class ConnectionsListView(APIView):
             })
 
         return Response({'connections': connected_users})
+
+
+class ConnectionAcceptView(APIView):
+    """Accept a pending connection request."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, connection_id, *args, **kwargs):
+        try:
+            connection = Connection.objects.get(id=connection_id)
+        except Connection.DoesNotExist:
+            return Response({'error': 'Connection not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Only the receiver can accept
+        if connection.receiver != request.user:
+            return Response({'error': 'You are not authorized to accept this connection'}, status=status.HTTP_403_FORBIDDEN)
+
+        if connection.status != 'pending':
+            return Response({'error': 'Connection is not pending'}, status=status.HTTP_400_BAD_REQUEST)
+
+        connection.status = 'connected'
+        connection.save()
+
+        serializer = ConnectionSerializer(connection)
+        return Response(serializer.data)
+
+
+class ConnectionRejectView(APIView):
+    """Reject a pending connection request."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, connection_id, *args, **kwargs):
+        try:
+            connection = Connection.objects.get(id=connection_id)
+        except Connection.DoesNotExist:
+            return Response({'error': 'Connection not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Only the receiver can reject
+        if connection.receiver != request.user:
+            return Response({'error': 'You are not authorized to reject this connection'}, status=status.HTTP_403_FORBIDDEN)
+
+        if connection.status != 'pending':
+            return Response({'error': 'Connection is not pending'}, status=status.HTTP_400_BAD_REQUEST)
+
+        connection.status = 'rejected'
+        connection.save()
+
+        serializer = ConnectionSerializer(connection)
+        return Response(serializer.data)
 
 
 class MessageView(APIView):

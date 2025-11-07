@@ -71,33 +71,84 @@ class MessageView(APIView):
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
+        # Check connection status
+        from .models import Connection
+        connection = Connection.objects.filter(
+            models.Q(requester=request.user, receiver=other) |
+            models.Q(requester=other, receiver=request.user)
+        ).first()
+
         # Get messages between request.user and other
         messages = Message.objects.filter(
             (models.Q(sender=request.user, receiver=other)) |
             (models.Q(sender=other, receiver=request.user))
         ).order_by('created_at')
 
-        serializer = MessageSerializer(messages, many=True)
-        return Response({'messages': serializer.data})
+        serializer = MessageSerializer(messages, many=True, context={'request': request})
+        
+        # Include connection status in response
+        connection_status = connection.status if connection else None
+        connection_id = connection.id if connection else None
+        is_requester = connection.requester.id == request.user.id if connection else None
+        
+        return Response({
+            'messages': serializer.data,
+            'connection_status': connection_status,
+            'connection_id': connection_id,
+            'is_requester': is_requester
+        })
 
     def post(self, request, *args, **kwargs):
         receiver_id = request.data.get('receiver')
-        content = request.data.get('content')
-        if not receiver_id or not content:
-            return Response({'error': 'receiver and content are required'}, status=status.HTTP_400_BAD_REQUEST)
+        content = request.data.get('content', '')
+        file = request.FILES.get('file')
+        
+        if not receiver_id:
+            return Response({'error': 'receiver is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not content and not file:
+            return Response({'error': 'content or file is required'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             receiver = User.objects.get(id=receiver_id)
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
+        # Check if connection exists between users
+        from .models import Connection
+        connection = Connection.objects.filter(
+            models.Q(requester=request.user, receiver=receiver) |
+            models.Q(requester=receiver, receiver=request.user)
+        ).first()
+
+        # If no connection exists, create a pending one (first message = connection request)
+        if not connection:
+            connection = Connection.objects.create(
+                requester=request.user,
+                receiver=receiver,
+                status='pending'
+            )
+        # If connection was rejected, don't allow messaging
+        elif connection.status == 'rejected':
+            return Response(
+                {'error': 'Connection request was rejected. You cannot message this user.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        # If connection is pending and current user is not the requester, don't allow
+        elif connection.status == 'pending' and connection.requester != request.user:
+            return Response(
+                {'error': 'You must accept the connection request before messaging.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         # Create and save the message (synchronous)
         msg = Message.objects.create(
             sender=request.user,
             receiver=receiver,
-            content=content
+            content=content,
+            file=file
         )
-        serializer = MessageSerializer(msg)
+        serializer = MessageSerializer(msg, context={'request': request})
 
         # Publish to Ably synchronously so we don't return a coroutine
         channel_name = get_channel_name(request.user.id, receiver.id)
@@ -109,3 +160,45 @@ class MessageView(APIView):
             pass
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ConversationsListView(APIView):
+    """Get list of all users the authenticated user has messaged with."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        from django.db.models import Q, Max, OuterRef, Subquery
+        
+        # Get all users that current user has exchanged messages with
+        sent_to = Message.objects.filter(sender=request.user).values_list('receiver', flat=True).distinct()
+        received_from = Message.objects.filter(receiver=request.user).values_list('sender', flat=True).distinct()
+        
+        # Combine and get unique user IDs
+        user_ids = set(list(sent_to) + list(received_from))
+        
+        if not user_ids:
+            return Response({'conversations': []})
+        
+        # Get users and their last message
+        users = User.objects.filter(id__in=user_ids)
+        
+        conversations = []
+        for user in users:
+            # Get last message between current user and this user
+            last_message = Message.objects.filter(
+                Q(sender=request.user, receiver=user) |
+                Q(sender=user, receiver=request.user)
+            ).order_by('-created_at').first()
+            
+            conversations.append({
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'last_message': last_message.content if last_message else None,
+                'last_message_time': last_message.created_at if last_message else None
+            })
+        
+        # Sort by last message time
+        conversations.sort(key=lambda x: x['last_message_time'] if x['last_message_time'] else '', reverse=True)
+        
+        return Response({'conversations': conversations})

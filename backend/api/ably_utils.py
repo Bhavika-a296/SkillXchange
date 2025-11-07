@@ -48,11 +48,50 @@ def generate_client_token(user_id, capabilities=None):
     import json
     capability_json = json.dumps(capabilities)
     
-    # Create a token request (this is synchronous)
-    token_request = ably.auth.create_token_request({
-        'client_id': str(user_id),
-        'capability': capability_json
-    })
-    
-    # Return the token request as a dict
-    return token_request
+    try:
+        # Create a token request (synchronous with AblyRest)
+        token_request = ably.auth.create_token_request({
+            'client_id': str(user_id),
+            'capability': capability_json
+        })
+        
+        # If token_request is a coroutine, we need to handle it differently
+        import inspect
+        if inspect.iscoroutine(token_request):
+            # Import asyncio to run the coroutine
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            token_request = loop.run_until_complete(token_request)
+        
+        # Convert TokenRequest object to dict for JSON serialization
+        if hasattr(token_request, '__dict__'):
+            # If it's an object with attributes, convert to dict
+            return {
+                'keyName': getattr(token_request, 'key_name', None),
+                'timestamp': getattr(token_request, 'timestamp', None),
+                'nonce': getattr(token_request, 'nonce', None),
+                'mac': getattr(token_request, 'mac', None),
+                'capability': getattr(token_request, 'capability', capability_json),
+                'clientId': str(user_id)
+            }
+        else:
+            # Already a dict
+            return token_request
+    except Exception as e:
+        # Fallback: generate a simple token instead
+        print(f"Error generating token request: {e}")
+        # Generate a simple token as fallback
+        token = ably.auth.request_token({
+            'client_id': str(user_id),
+            'capability': capability_json
+        })
+        return {
+            'token': token.token,
+            'expires': token.expires,
+            'capability': capability_json,
+            'clientId': str(user_id)
+        }

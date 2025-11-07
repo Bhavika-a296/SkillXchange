@@ -74,8 +74,14 @@ class ResumeUploadView(APIView):
             # Check if user already has a resume
             try:
                 existing_resume = Resume.objects.get(user=request.user)
-                # Delete old resume file
-                existing_resume.file.delete()
+                # Delete old resume file (with error handling for file locks)
+                try:
+                    existing_resume.file.delete()
+                except PermissionError as pe:
+                    print(f"Warning: Could not delete old resume file (may be locked): {pe}")
+                    # Continue anyway - the database entry will be deleted and new file will be saved
+                except Exception as e:
+                    print(f"Warning: Error deleting old resume file: {e}")
                 existing_resume.delete()
             except Resume.DoesNotExist:
                 pass
