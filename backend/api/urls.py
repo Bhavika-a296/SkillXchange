@@ -29,4 +29,5 @@ urlpatterns = [
     path('messages/', message_views.MessageView.as_view(), name='messages'),
     path('conversations/', message_views.ConversationsListView.as_view(), name='conversations'),
     path('realtime/token/', message_views.AblyTokenView.as_view(), name='ably_token'),
+    path('streaks/', views.LoginStreakView.as_view(), name='login_streaks'),
 ]

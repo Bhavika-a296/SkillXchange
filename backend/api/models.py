@@ -104,6 +104,21 @@ class Message(models.Model):
     def __str__(self):
         return f"{self.sender.username} -> {self.receiver.username}: {self.content[:30]}"
 
+
+class DailyLogin(models.Model):
+    """Track daily logins for streak calculation"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='daily_logins')
+    login_date = models.DateField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'login_date')
+        ordering = ['-login_date']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.login_date}"
+
+
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:

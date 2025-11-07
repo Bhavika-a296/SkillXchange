@@ -474,3 +474,99 @@ class MessageView(APIView):
         msg = Message.objects.create(sender=request.user, receiver=receiver, content=content)
         serializer = MessageSerializer(msg)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class LoginStreakView(APIView):
+    """Track and retrieve login streaks"""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """Get current user's login streak data"""
+        from datetime import date, timedelta
+        from .models import DailyLogin
+        
+        user = request.user
+        today = date.today()
+        
+        # Record today's login if not already recorded
+        DailyLogin.objects.get_or_create(user=user, login_date=today)
+        
+        # Get all login dates for this user
+        login_dates = list(DailyLogin.objects.filter(user=user).values_list('login_date', flat=True).order_by('login_date'))
+        
+        if not login_dates:
+            return Response({
+                'current_streak': 0,
+                'max_streak': 0,
+                'total_days': 0,
+                'contributions': []
+            })
+        
+        # Calculate streaks
+        current_streak = 0
+        max_streak = 0
+        temp_streak = 0
+        
+        # Check current streak (must include today or yesterday)
+        login_dates_set = set(login_dates)
+        check_date = today
+        while check_date in login_dates_set:
+            current_streak += 1
+            check_date -= timedelta(days=1)
+        
+        # If no login today, check if there was login yesterday
+        if current_streak == 0 and (today - timedelta(days=1)) in login_dates_set:
+            check_date = today - timedelta(days=1)
+            while check_date in login_dates_set:
+                current_streak += 1
+                check_date -= timedelta(days=1)
+        
+        # Calculate max streak
+        for i in range(len(login_dates)):
+            if i == 0:
+                temp_streak = 1
+            else:
+                # Check if consecutive days
+                if (login_dates[i] - login_dates[i-1]).days == 1:
+                    temp_streak += 1
+                else:
+                    max_streak = max(max_streak, temp_streak)
+                    temp_streak = 1
+        
+        max_streak = max(max_streak, temp_streak, current_streak)
+        
+        # Generate contribution data for past 365 days
+        contributions = []
+        start_date = today - timedelta(days=364)
+        
+        for i in range(365):
+            check_date = start_date + timedelta(days=i)
+            count = 1 if check_date in login_dates_set else 0
+            contributions.append({
+                'date': check_date.isoformat(),
+                'count': count
+            })
+        
+        return Response({
+            'current_streak': current_streak,
+            'max_streak': max_streak,
+            'total_days': len(login_dates),
+            'contributions': contributions
+        })
+    
+    def post(self, request):
+        """Manually record a login (called on user login)"""
+        from datetime import date
+        from .models import DailyLogin
+        
+        today = date.today()
+        login, created = DailyLogin.objects.get_or_create(
+            user=request.user,
+            login_date=today
+        )
+        
+        return Response({
+            'success': True,
+            'created': created,
+            'date': today.isoformat()
+        })
