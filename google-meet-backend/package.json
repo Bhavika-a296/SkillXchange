@@ -1,0 +1,17 @@
+{
+  "name": "google-meet-backend",
+  "version": "1.0.0",
+  "description": "Small Node backend to create Google Meet links via Calendar API for local testing",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.1.4",
+    "express": "^4.18.2",
+    "googleapis": "^131.0.0",
+    "uuid": "^9.0.0"
+  }
+}
