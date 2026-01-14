@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import UserProfile, Skill, Resume, SkillMatch
-from .models import Connection, Message
+from .models import Connection, Message, Notification
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -83,3 +83,16 @@ class MessageSerializer(serializers.ModelSerializer):
 
     def get_file_name(self, obj):
         return obj.file.name.split('/')[-1] if obj.file else None
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    sender = UserSerializer(read_only=True)
+    sender_username = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Notification
+        fields = ('id', 'notification_type', 'title', 'message', 'sender', 'sender_username', 'link', 'read', 'created_at')
+        read_only_fields = ('user', 'sender', 'created_at')
+
+    def get_sender_username(self, obj):
+        return obj.sender.username if obj.sender else None

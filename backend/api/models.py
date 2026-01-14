@@ -119,7 +119,46 @@ class DailyLogin(models.Model):
         return f"{self.user.username} - {self.login_date}"
 
 
+class Notification(models.Model):
+    """Store notifications for users"""
+    NOTIFICATION_TYPES = [
+        ('message', 'New Message'),
+        ('connection_request', 'Connection Request'),
+        ('connection_accepted', 'Connection Accepted'),
+        ('skill_match', 'Skill Match Found'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    notification_type = models.CharField(max_length=30, choices=NOTIFICATION_TYPES)
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications_sent', null=True, blank=True)
+    link = models.CharField(max_length=500, blank=True)  # URL to navigate to
+    read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.notification_type}: {self.title}"
+
+
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         UserProfile.objects.create(user=instance)
+
+
+@receiver(post_save, sender=Message)
+def create_message_notification(sender, instance, created, **kwargs):
+    """Create a notification when a new message is sent"""
+    if created:
+        Notification.objects.create(
+            user=instance.receiver,
+            notification_type='message',
+            title=f'New message from {instance.sender.username}',
+            message=instance.content[:100],  # First 100 chars of message
+            sender=instance.sender,
+            link=f'/messages?user={instance.sender.username}'
+        )

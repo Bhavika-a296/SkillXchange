@@ -67,7 +67,12 @@ class MessageView(APIView):
             return Response({'error': 'Query parameter "with" required'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            other = User.objects.get(id=other_id)
+            # Try to get by ID first, if it fails, try by username
+            try:
+                other = User.objects.get(id=int(other_id))
+            except (ValueError, TypeError):
+                # If other_id is not a number, try to get by username
+                other = User.objects.get(username=other_id)
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 

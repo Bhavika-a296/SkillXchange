@@ -8,6 +8,7 @@ from . import message_views
 
 router = DefaultRouter()
 router.register(r'skills', views.SkillViewSet, basename='skills')
+router.register(r'notifications', views.NotificationViewSet, basename='notifications')
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -30,4 +31,5 @@ urlpatterns = [
     path('conversations/', message_views.ConversationsListView.as_view(), name='conversations'),
     path('realtime/token/', message_views.AblyTokenView.as_view(), name='ably_token'),
     path('streaks/', views.LoginStreakView.as_view(), name='login_streaks'),
+    path('debug/reload-model/', views.ModelReloadView.as_view(), name='reload_model'),
 ]

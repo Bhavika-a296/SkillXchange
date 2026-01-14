@@ -67,6 +67,10 @@ def get_profile_by_username(request, username):
         user = User.objects.get(username__iexact=username)
     except User.DoesNotExist:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    except User.MultipleObjectsReturned:
+        # Handle duplicate users - return the first one
+        user = User.objects.filter(username__iexact=username).first()
+        print(f"[WARNING] Multiple users found with username '{username}', using ID: {user.id}")
 
     try:
         profile = UserProfile.objects.get(user=user)

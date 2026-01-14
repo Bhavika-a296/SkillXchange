@@ -32,27 +32,97 @@ def ensure_nltk_data():
 # Initialize NLTK data
 ensure_nltk_data()
 
+print("[SkillMatch] ============================================")
+print("[SkillMatch] utils_safe.py MODULE LOADED/RELOADED")
+print("[SkillMatch] ============================================")
 
 # Initialize the BERT model lazily
 _model = None
+_model_load_failed = False
+_model_load_attempts = 0
+_max_load_attempts = 3  # Limit attempts to prevent infinite loops
 
-def get_model():
+def get_model(force_reload=False):
     """Lazily load the SentenceTransformer model. If the package isn't
     available in the environment (for example on CI or when running simple
     management commands), this will return None and the caller should handle
     the fallback behavior gracefully.
     """
-    global _model
-    if _model is None:
+    global _model, _model_load_failed, _model_load_attempts
+    
+    # If force reload requested, reset state
+    if force_reload:
+        print(f"[SkillMatch] Force reloading model...")
+        _model = None
+        _model_load_failed = False
+        _model_load_attempts = 0
+    
+    # If we already have a working model, return it
+    if _model is not None:
+        return _model
+    
+    # If we've exceeded max attempts and haven't been asked to force reload, give up
+    if _model_load_failed and _model_load_attempts >= _max_load_attempts and not force_reload:
+        print(f"[SkillMatch] Model load failed after {_model_load_attempts} attempts, giving up")
+        return None
+        
+    if _model is None and _model_load_attempts < _max_load_attempts:
         try:
             from sentence_transformers import SentenceTransformer
-            _model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
+            import torch
+            import os
+            
+            _model_load_attempts += 1
+            print(f"[SkillMatch] Loading model (attempt {_model_load_attempts}/{_max_load_attempts})...")
+            
+            # Set environment variables
+            os.environ['TRANSFORMERS_OFFLINE'] = '0'
+            os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
+            
+            # CRITICAL FIX for PyTorch 2.8.0+: Disable meta device initialization
+            # This prevents "Cannot copy out of meta tensor" error
+            try:
+                import torch._dynamo
+                torch._dynamo.config.suppress_errors = True
+            except:
+                pass
+            
+            # Force CPU device BEFORE loading model
+            try:
+                torch.set_default_device('cpu')
+                torch.set_default_dtype(torch.float32)
+            except Exception as e:
+                print(f"[SkillMatch] Warning: Could not set default device: {e}")
+            
+            # Disable meta device to prevent PyTorch 2.7+ meta tensor errors
+            os.environ['PYTORCH_JIT'] = '0'
+            os.environ['TOKENIZERS_PARALLELISM'] = 'false'
+            
+            # Load model with explicit device map to prevent meta tensor usage
+            print(f"[SkillMatch] Loading SentenceTransformer model...")
+            
+            # CRITICAL FIX for PyTorch 2.7+ meta tensor bug:
+            # Load model with device='cpu' explicitly to avoid meta tensor initialization
+            _model = SentenceTransformer('paraphrase-MiniLM-L6-v2', device='cpu', trust_remote_code=True)
+            
+            # The model is already on CPU by default, no need to move it
+            print(f"[SkillMatch] Model loaded on default device")
+            
+            # Test the model with a simple encoding to ensure it works
+            test_result = _model.encode("test", show_progress_bar=False)
+            print(f"[SkillMatch] ✓ Model loaded successfully, embedding dimension: {test_result.shape[0]}")
+            _model_load_failed = False
+            
         except Exception as e:
             # Do not raise here — allow the application to continue without
             # embeddings. Log a warning so developers know heavy deps are
             # unavailable.
-            print(f"Warning: could not load SentenceTransformer model: {e}")
+            print(f"[SkillMatch] ERROR: Could not load SentenceTransformer model: {e}")
+            import traceback
+            traceback.print_exc()
             _model = None
+            _model_load_failed = True
+            
     return _model
 
 
@@ -116,15 +186,20 @@ def extract_skills_from_text(text: str) -> List[str]:
 
 def get_skill_embedding(skill_text: str) -> List[float]:
     """Get BERT embedding for a skill."""
+    
     model = get_model()
     if model is None:
         # Fallback: return an empty list to indicate embedding unavailable.
+        print(f"[SkillMatch] ERROR: Model is None, cannot create embedding for '{skill_text}'")
         return []
     try:
-        embedding = model.encode([skill_text])[0]
-        return embedding.tolist()
+        embedding = model.encode([skill_text], show_progress_bar=False)[0]
+        result = embedding.tolist()
+        return result
     except Exception as e:
-        print(f"Warning: failed to encode skill '{skill_text}': {e}")
+        print(f"[SkillMatch] ERROR: Failed to encode skill '{skill_text}': {e}")
+        import traceback
+        traceback.print_exc()
         return []
 
 
@@ -138,14 +213,11 @@ def calculate_skill_similarity(skill_embedding: List[float], target_embedding: L
         from sklearn.metrics.pairwise import cosine_similarity
         embedding1 = np.array(skill_embedding).reshape(1, -1)
         embedding2 = np.array(target_embedding).reshape(1, -1)
-        return float(cosine_similarity(embedding1, embedding2)[0][0])
+        similarity = float(cosine_similarity(embedding1, embedding2)[0][0])
+        return similarity
     except Exception as e:
-        # If sklearn/numpy aren't available, fallback to simple heuristic:
-        # identical embeddings -> 1.0, else 0.0
-        try:
-            return 1.0 if skill_embedding == target_embedding else 0.0
-        except Exception:
-            return 0.0
+        print(f"[SkillMatch] Error calculating similarity: {e}")
+        return 0.0
 
 
 def find_matching_users(desired_skill: str, all_skills: List[Tuple[int, str, List[float]]]) -> List[Tuple[int, float]]:
@@ -194,6 +266,11 @@ def find_matching_users_for_skills(desired_skills: List[str], all_skills: List[T
 
         for ds in desired_skills:
             ds_embed = desired_embeddings.get(ds) or []
+            
+            # Skip if embeddings are missing
+            if not ds_embed or not embedding:
+                continue
+            
             try:
                 sim = calculate_skill_similarity(embedding, ds_embed)
             except Exception:
@@ -203,9 +280,9 @@ def find_matching_users_for_skills(desired_skills: List[str], all_skills: List[T
             if sim > user_skill_max[user_id][ds]:
                 user_skill_max[user_id][ds] = sim
 
-            # If similarity indicates a relevant match (non-zero or exact name), record the skill name
+            # Only highlight exact matches (case-insensitive)
             try:
-                if sim > 0.0 or (skill_name and skill_name.lower() == ds.lower()):
+                if skill_name and skill_name.lower() == ds.lower():
                     user_matching_names[user_id].add(skill_name)
             except Exception:
                 pass
@@ -224,3 +301,17 @@ def find_matching_users_for_skills(desired_skills: List[str], all_skills: List[T
     # Sort by match_score desc and return top 10
     results.sort(key=lambda x: x['match_score'], reverse=True)
     return results[:10]
+
+
+# Pre-load model at module import time (only if not running management commands)
+import sys
+if 'manage.py' in sys.argv[0] and ('runserver' in sys.argv or 'run' in sys.argv):
+    print("[SkillMatch] Pre-loading model at startup...")
+    try:
+        _startup_model = get_model(force_reload=False)
+        if _startup_model:
+            print("[SkillMatch] ✓ Model pre-loaded successfully at startup")
+        else:
+            print("[SkillMatch] ✗ Model pre-load failed at startup")
+    except Exception as e:
+        print(f"[SkillMatch] ✗ Error pre-loading model at startup: {e}")

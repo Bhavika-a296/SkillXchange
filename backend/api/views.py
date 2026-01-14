@@ -16,7 +16,7 @@ from .serializers import (
     ResumeSerializer,
     SkillMatchSerializer
 )
-from .serializers import ConnectionSerializer, MessageSerializer
+from .serializers import ConnectionSerializer, MessageSerializer, NotificationSerializer
 from .utils_safe import (
     extract_text_from_pdf,
     extract_skills_from_text,
@@ -295,29 +295,85 @@ class SkillMatchView(APIView):
         else:
             desired_skills = list(skills)
 
+        print(f"[SkillMatch] User {request.user.username} searching for: {desired_skills}")
+
         # Get all skills from other users
         all_skills = list(Skill.objects.exclude(user=request.user).values_list(
             'user_id', 'name', 'embedding'
         ))
+        print(f"[SkillMatch] Found {len(all_skills)} skills from other users")
 
         # If multiple desired skills provided, compute aggregated matches
         matches = find_matching_users_for_skills(desired_skills, all_skills)
+        print(f"[SkillMatch] Computed {len(matches)} matches")
 
         # Enrich matches with provider username
         user_ids = [m['user_id'] for m in matches]
         from django.contrib.auth.models import User
+        from django.db import transaction
+        import time
         users = User.objects.filter(id__in=user_ids).values('id', 'username')
         user_map = {u['id']: u['username'] for u in users}
 
         response_matches = []
-        for m in matches:
-            response_matches.append({
-                'user_id': m['user_id'],
-                'username': user_map.get(m['user_id'], 'Unknown'),
-                'match_score': m['match_score'],
-                'matching_skills': m.get('matching_skills', [])
-            })
-
+        saved_count = 0
+        
+        # Use atomic transaction to prevent database locks
+        max_retries = 3
+        retry_delay = 0.1  # Start with 100ms delay
+        
+        for retry in range(max_retries):
+            try:
+                with transaction.atomic():
+                    for m in matches:
+                        username = user_map.get(m['user_id'], 'Unknown')
+                        print(f"[SkillMatch] User {m['user_id']} ({username}): score={m['match_score']:.4f}")
+                        
+                        # Save match to database (lowered threshold to 0.3 to capture more matches)
+                        if m['match_score'] > 0.3:
+                            for skill in desired_skills:
+                                obj, created = SkillMatch.objects.update_or_create(
+                                    seeker=request.user,
+                                    provider_id=m['user_id'],
+                                    desired_skill=skill,
+                                    defaults={'similarity_score': m['match_score']}
+                                )
+                                action = 'Created' if created else 'Updated'
+                                print(f"[SkillMatch] {action} match: {request.user.username} -> User({m['user_id']}) for '{skill}' score={m['match_score']:.4f}")
+                                saved_count += 1
+                        else:
+                            print(f"[SkillMatch] Skipped saving (score <= 0.3)")
+                        
+                        response_matches.append({
+                            'user_id': m['user_id'],
+                            'username': username,
+                            'match_score': m['match_score'],
+                            'match_percentage': int(m['match_score'] * 100),  # Add percentage for frontend
+                            'matching_skills': m.get('matching_skills', [])
+                        })
+                
+                # Transaction successful, break out of retry loop
+                print(f"[SkillMatch] Saved {saved_count} matches to database")
+                break
+                
+            except Exception as e:
+                if 'database is locked' in str(e).lower():
+                    if retry < max_retries - 1:
+                        wait_time = retry_delay * (2 ** retry)  # Exponential backoff
+                        print(f"[SkillMatch] Database locked, retrying in {wait_time:.2f}s (attempt {retry + 1}/{max_retries})")
+                        time.sleep(wait_time)
+                        response_matches = []  # Reset matches for retry
+                        saved_count = 0
+                    else:
+                        print(f"[SkillMatch] Database locked after {max_retries} retries, returning error")
+                        return Response({
+                            'error': 'Database busy, please try again',
+                            'matches': []
+                        }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+                else:
+                    # Re-raise non-lock errors
+                    raise
+        
         return Response({'matches': response_matches})
 
 
@@ -570,3 +626,61 @@ class LoginStreakView(APIView):
             'created': created,
             'date': today.isoformat()
         })
+
+
+class NotificationViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing notifications"""
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = NotificationSerializer
+    
+    def get_queryset(self):
+        """Return notifications for the current user"""
+        from .models import Notification
+        return Notification.objects.filter(user=self.request.user)
+    
+    @action(detail=False, methods=['get'])
+    def unread(self, request):
+        """Get unread notifications count"""
+        from .models import Notification
+        count = Notification.objects.filter(user=request.user, read=False).count()
+        return Response({'unread_count': count})
+    
+    @action(detail=False, methods=['post'])
+    def mark_all_read(self, request):
+        """Mark all notifications as read"""
+        from .models import Notification
+        Notification.objects.filter(user=request.user, read=False).update(read=True)
+        return Response({'success': True})
+    
+    @action(detail=True, methods=['post'])
+    def mark_read(self, request, pk=None):
+        """Mark a single notification as read"""
+        from .models import Notification
+        notification = get_object_or_404(Notification, pk=pk, user=request.user)
+        notification.read = True
+        notification.save()
+        serializer = self.get_serializer(notification)
+        return Response(serializer.data)
+
+
+class ModelReloadView(APIView):
+    """Debug endpoint to force reload the SentenceTransformer model"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request):
+        """Force reload the model"""
+        from .utils_safe import get_model
+        
+        # Force reload the model
+        model = get_model(force_reload=True)
+        
+        if model is not None:
+            return Response({
+                'success': True,
+                'message': 'Model reloaded successfully'
+            })
+        else:
+            return Response({
+                'success': False,
+                'message': 'Model failed to load'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
