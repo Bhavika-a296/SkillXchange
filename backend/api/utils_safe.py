@@ -303,15 +303,17 @@ def find_matching_users_for_skills(desired_skills: List[str], all_skills: List[T
     return results[:10]
 
 
-# Pre-load model at module import time (only if not running management commands)
-import sys
-if 'manage.py' in sys.argv[0] and ('runserver' in sys.argv or 'run' in sys.argv):
-    print("[SkillMatch] Pre-loading model at startup...")
-    try:
-        _startup_model = get_model(force_reload=False)
-        if _startup_model:
-            print("[SkillMatch] ✓ Model pre-loaded successfully at startup")
-        else:
-            print("[SkillMatch] ✗ Model pre-load failed at startup")
-    except Exception as e:
-        print(f"[SkillMatch] ✗ Error pre-loading model at startup: {e}")
+# Pre-load model at module import time (only if running management commands)
+# Temporarily disabled to allow server startup
+# import sys
+# if 'manage.py' in sys.argv[0] and ('runserver' in sys.argv or 'run' in sys.argv):
+#     print("[SkillMatch] Pre-loading model at startup...")
+#     try:
+#         _startup_model = get_model(force_reload=False)
+#         if _startup_model:
+#             print("[SkillMatch] ✓ Model pre-loaded successfully at startup")
+#         else:
+#             print("[SkillMatch] ✗ Model pre-load failed at startup")
+#     except Exception as e:
+#         print(f"[SkillMatch] ✗ Error pre-loading model at startup: {e}")
+

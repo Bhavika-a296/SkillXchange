@@ -1,7 +1,9 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import UserProfile, Skill, Resume, SkillMatch
-from .models import Connection, Message, Notification
+from .models import (
+    UserProfile, Skill, Resume, SkillMatch, Connection, Message, Notification,
+    LearningSession, UserPoints, PointTransaction, SkillRating, PointConfiguration, Badge
+)
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -96,3 +98,75 @@ class NotificationSerializer(serializers.ModelSerializer):
 
     def get_sender_username(self, obj):
         return obj.sender.username if obj.sender else None
+
+
+class UserPointsSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    
+    class Meta:
+        model = UserPoints
+        fields = ('id', 'user', 'username', 'balance', 'total_earned', 'total_spent', 'updated_at')
+        read_only_fields = ('user', 'username', 'updated_at')
+
+
+class PointTransactionSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    
+    class Meta:
+        model = PointTransaction
+        fields = ('id', 'user', 'username', 'transaction_type', 'amount', 'balance_after', 'description', 'created_at')
+        read_only_fields = ('user', 'username', 'created_at')
+
+
+class PointConfigurationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PointConfiguration
+        fields = ('id', 'name', 'value', 'description', 'created_at', 'updated_at')
+
+
+class LearningSessionSerializer(serializers.ModelSerializer):
+    learner = UserSerializer(read_only=True)
+    teacher = UserSerializer(read_only=True)
+    progress_percentage = serializers.ReadOnlyField()
+    days_remaining = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = LearningSession
+        fields = (
+            'id', 'learner', 'teacher', 'skill_name', 'status',
+            'total_days', 'start_date', 'end_date',
+            'points_deducted', 'points_awarded_learner', 'points_awarded_teacher',
+            'progress_percentage', 'days_remaining',
+            'created_at', 'updated_at'
+        )
+        read_only_fields = (
+            'learner', 'teacher', 'start_date', 'end_date',
+            'points_deducted', 'points_awarded_learner', 'points_awarded_teacher',
+            'progress_percentage', 'days_remaining',
+            'created_at', 'updated_at'
+        )
+
+
+class SkillRatingSerializer(serializers.ModelSerializer):
+    rater = UserSerializer(read_only=True)
+    rated_user = UserSerializer(read_only=True)
+    learning_session = LearningSessionSerializer(read_only=True)
+    skill_name = serializers.CharField(source='learning_session.skill_name', read_only=True)
+    
+    class Meta:
+        model = SkillRating
+        fields = (
+            'id', 'learning_session', 'rater', 'rated_user',
+            'rating', 'feedback', 'skill_name', 'created_at'
+        )
+        read_only_fields = ('learning_session', 'rater', 'rated_user', 'skill_name', 'created_at')
+
+
+class BadgeSerializer(serializers.ModelSerializer):
+    badge_name = serializers.CharField(source='get_badge_type_display', read_only=True)
+    icon = serializers.CharField(source='badge_icon', read_only=True)
+    
+    class Meta:
+        model = Badge
+        fields = ('id', 'badge_type', 'badge_name', 'icon', 'earned_at')
+        read_only_fields = ('id', 'badge_type', 'badge_name', 'icon', 'earned_at')

@@ -634,9 +634,9 @@ class NotificationViewSet(viewsets.ModelViewSet):
     serializer_class = NotificationSerializer
     
     def get_queryset(self):
-        """Return notifications for the current user"""
+        """Return only unread notifications for the current user"""
         from .models import Notification
-        return Notification.objects.filter(user=self.request.user)
+        return Notification.objects.filter(user=self.request.user, read=False)
     
     @action(detail=False, methods=['get'])
     def unread(self, request):
