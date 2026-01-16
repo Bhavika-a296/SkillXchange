@@ -124,6 +124,11 @@
   animation: badgePulse 2s ease-in-out infinite;
 }
 
+.notification-badge.requests-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.5);
+}
+
 @keyframes badgePulse {
   0%, 100% {
     transform: scale(1);

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ResumeUpload from '../../components/ResumeUpload/ResumeUpload';
-import SkillMatch from '../../components/SkillMatch/SkillMatch';
+import SkillsLearnedTaught from '../../components/SkillsLearnedTaught/SkillsLearnedTaught';
+import Badges from '../../components/Badges/Badges';
 import { profileApi } from '../../services/api';
 import api from '../../services/api';
 import './Profile.css';
@@ -175,114 +176,6 @@ const Profile = () => {
       </section>
 
       <div className="profile-content">
-        <section className="badges-section">
-          <h3>Your Badges</h3>
-          <div className="badges-grid">
-            {/* Badge 1: 5 Day Streak */}
-            <div className={`badge-item ${streakData.maxStreak >= 5 ? 'earned' : 'locked'}`}>
-              <div className="badge-icon">
-                <svg viewBox="0 0 100 100" className="badge-svg">
-                  <circle cx="50" cy="50" r="45" className="badge-circle" />
-                  <path d="M50 20 L60 40 L82 43 L66 58 L70 80 L50 69 L30 80 L34 58 L18 43 L40 40 Z" className="badge-star" />
-                  <text x="50" y="95" textAnchor="middle" className="badge-number">5</text>
-                </svg>
-              </div>
-              <div className="badge-info">
-                <div className="badge-name">Starter</div>
-                <div className="badge-desc">5 Day Streak</div>
-              </div>
-              {streakData.maxStreak >= 5 && <div className="badge-earned">✓</div>}
-            </div>
-
-            {/* Badge 2: 10 Day Streak */}
-            <div className={`badge-item ${streakData.maxStreak >= 10 ? 'earned' : 'locked'}`}>
-              <div className="badge-icon">
-                <svg viewBox="0 0 100 100" className="badge-svg">
-                  <circle cx="50" cy="50" r="45" className="badge-circle" />
-                  <path d="M50 15 L55 35 L75 40 L60 55 L63 75 L50 67 L37 75 L40 55 L25 40 L45 35 Z" className="badge-star" />
-                  <path d="M50 25 L53 38 L65 41 L56 50 L58 62 L50 57 L42 62 L44 50 L35 41 L47 38 Z" className="badge-star-small" />
-                  <text x="50" y="95" textAnchor="middle" className="badge-number">10</text>
-                </svg>
-              </div>
-              <div className="badge-info">
-                <div className="badge-name">Committed</div>
-                <div className="badge-desc">10 Day Streak</div>
-              </div>
-              {streakData.maxStreak >= 10 && <div className="badge-earned">✓</div>}
-            </div>
-
-            {/* Badge 3: 30 Day Streak */}
-            <div className={`badge-item ${streakData.maxStreak >= 30 ? 'earned' : 'locked'}`}>
-              <div className="badge-icon">
-                <svg viewBox="0 0 100 100" className="badge-svg">
-                  <circle cx="50" cy="50" r="45" className="badge-circle" />
-                  <polygon points="50,10 61,35 88,35 67,52 76,77 50,60 24,77 33,52 12,35 39,35" className="badge-star" />
-                  <circle cx="50" cy="50" r="15" className="badge-center" />
-                  <text x="50" y="95" textAnchor="middle" className="badge-number">30</text>
-                </svg>
-              </div>
-              <div className="badge-info">
-                <div className="badge-name">Dedicated</div>
-                <div className="badge-desc">30 Day Streak</div>
-              </div>
-              {streakData.maxStreak >= 30 && <div className="badge-earned">✓</div>}
-            </div>
-
-            {/* Badge 4: 60 Day Streak */}
-            <div className={`badge-item ${streakData.maxStreak >= 60 ? 'earned' : 'locked'}`}>
-              <div className="badge-icon">
-                <svg viewBox="0 0 100 100" className="badge-svg">
-                  <circle cx="50" cy="50" r="45" className="badge-circle" />
-                  <path d="M50 10 L62 38 L92 38 L68 56 L78 84 L50 66 L22 84 L32 56 L8 38 L38 38 Z" className="badge-star" />
-                  <path d="M50 20 L58 40 L78 40 L62 52 L68 72 L50 60 L32 72 L38 52 L22 40 L42 40 Z" className="badge-star-overlay" />
-                  <text x="50" y="95" textAnchor="middle" className="badge-number">60</text>
-                </svg>
-              </div>
-              <div className="badge-info">
-                <div className="badge-name">Champion</div>
-                <div className="badge-desc">60 Day Streak</div>
-              </div>
-              {streakData.maxStreak >= 60 && <div className="badge-earned">✓</div>}
-            </div>
-
-            {/* Badge 5: 100 Day Streak */}
-            <div className={`badge-item ${streakData.maxStreak >= 100 ? 'earned' : 'locked'}`}>
-              <div className="badge-icon">
-                <svg viewBox="0 0 100 100" className="badge-svg">
-                  <circle cx="50" cy="50" r="45" className="badge-circle" />
-                  <path d="M50 8 L64 36 L94 36 L70 54 L82 82 L50 64 L18 82 L30 54 L6 36 L36 36 Z" className="badge-star" />
-                  <circle cx="50" cy="50" r="20" className="badge-center" />
-                  <circle cx="50" cy="50" r="12" className="badge-inner" />
-                  <text x="50" y="95" textAnchor="middle" className="badge-number">100</text>
-                </svg>
-              </div>
-              <div className="badge-info">
-                <div className="badge-name">Legend</div>
-                <div className="badge-desc">100 Day Streak</div>
-              </div>
-              {streakData.maxStreak >= 100 && <div className="badge-earned">✓</div>}
-            </div>
-
-            {/* Badge 6: 365 Day Streak */}
-            <div className={`badge-item ${streakData.maxStreak >= 365 ? 'earned' : 'locked'}`}>
-              <div className="badge-icon">
-                <svg viewBox="0 0 100 100" className="badge-svg">
-                  <circle cx="50" cy="50" r="45" className="badge-circle" />
-                  <path d="M50 5 L66 34 L98 34 L72 52 L86 81 L50 63 L14 81 L28 52 L2 34 L34 34 Z" className="badge-star" />
-                  <circle cx="50" cy="50" r="25" className="badge-center" />
-                  <path d="M50 30 L54 44 L68 44 L57 52 L61 66 L50 58 L39 66 L43 52 L32 44 L46 44 Z" className="badge-star-inner" />
-                  <text x="50" y="95" textAnchor="middle" className="badge-number">365</text>
-                </svg>
-              </div>
-              <div className="badge-info">
-                <div className="badge-name">Master</div>
-                <div className="badge-desc">Year Streak</div>
-              </div>
-              {streakData.maxStreak >= 365 && <div className="badge-earned">✓</div>}
-            </div>
-          </div>
-        </section>
-
         <section className="streaks-section">
           <h3>Login Streaks</h3>
           <div className="streak-stats">
@@ -318,6 +211,16 @@ const Profile = () => {
               })}
             </div>
           </div>
+        </section>
+
+        <section className="learning-journey-section">
+          <h3>Learning Journey on SkillXchange</h3>
+          <SkillsLearnedTaught />
+        </section>
+
+        <section className="badges-section">
+          <h3>🏆 Achievements & Badges</h3>
+          <Badges />
         </section>
 
         <section className="connections-section">

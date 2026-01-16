@@ -10,9 +10,11 @@ import Register from './pages/Auth/Register';
 import Profile from './pages/Profile/Profile';
 import UserProfileView from './pages/Profile/UserProfileView';
 import Skills from './pages/Skills/Skills';
-import Explore from './pages/Explore/Explore';
 import Messages from './pages/Messages/Messages';
 import Notifications from './pages/Notifications/Notifications';
+import Learning from './pages/Learning/Learning';
+import LearningRequests from './components/LearningRequests/LearningRequests';
+import Rating from './pages/Rating/Rating';
 import ResumeUpload from './components/ResumeUpload/ResumeUpload';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
@@ -47,14 +49,6 @@ function App() {
                   }
                 />
                 <Route
-                  path="/explore"
-                  element={
-                    <ProtectedRoute>
-                      <Explore />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
                   path="/messages"
                   element={
                     <ProtectedRoute>
@@ -67,6 +61,30 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <Notifications />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/learning"
+                  element={
+                    <ProtectedRoute>
+                      <Learning />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/learning-requests"
+                  element={
+                    <ProtectedRoute>
+                      <LearningRequests />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/rate-session/:sessionId"
+                  element={
+                    <ProtectedRoute>
+                      <Rating />
                     </ProtectedRoute>
                   }
                 />

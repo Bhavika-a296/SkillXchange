@@ -1,13 +1,14 @@
 .resume-upload {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 2rem;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .upload-info {
   color: #94a3b8;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
   font-weight: 400;
+  font-size: 0.85rem;
 }
 
 .error-message {
@@ -21,8 +22,8 @@
 .upload-form {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  margin-bottom: 20px;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
 .file-input-container {
@@ -38,7 +39,7 @@
 
 .file-label {
   display: block;
-  padding: 12px 20px;
+  padding: 8px 12px;
   background-color: rgba(148, 163, 184, 0.05);
   border: 2px dashed rgba(148, 163, 184, 0.2);
   border-radius: 8px;
@@ -46,6 +47,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   color: #94a3b8;
+  font-size: 0.85rem;
 }
 
 .file-label:hover {
@@ -55,7 +57,7 @@
 }
 
 .upload-button {
-  padding: 12px 24px;
+  padding: 8px 16px;
   background: rgba(148, 163, 184, 0.15);
   color: #cbd5e1;
   border: 1px solid rgba(148, 163, 184, 0.25);
@@ -63,6 +65,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   font-weight: 500;
+  font-size: 0.85rem;
 }
 
 .upload-button:hover:not(:disabled) {
@@ -80,22 +83,22 @@
 
 .current-resume {
   background-color: rgba(148, 163, 184, 0.05);
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 20px;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
   border: 1px solid rgba(148, 163, 184, 0.15);
 }
 
 .resume-info {
   color: #94a3b8;
-  margin-bottom: 15px;
-  font-size: 0.95rem;
+  margin-bottom: 10px;
+  font-size: 0.8rem;
   font-weight: 400;
 }
 
 .view-resume-btn {
   display: inline-block;
-  padding: 10px 20px;
+  padding: 6px 12px;
   background-color: transparent;
   color: #94a3b8;
   border: 2px solid rgba(148, 163, 184, 0.3);
@@ -104,6 +107,7 @@
   transition: all 0.3s ease;
   cursor: pointer;
   font-weight: 500;
+  font-size: 0.8rem;
 }
 
 .view-resume-btn:hover {
@@ -113,10 +117,10 @@
 }
 
 .extracted-skills {
-  margin-top: 30px;
-  padding: 20px;
+  margin-top: 15px;
+  padding: 12px;
   background-color: rgba(148, 163, 184, 0.05);
-  border-radius: 12px;
+  border-radius: 8px;
   box-shadow: none;
   border: 1px solid rgba(148, 163, 184, 0.15);
 }
@@ -124,15 +128,15 @@
 .skills-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 15px;
+  gap: 6px;
+  margin-top: 10px;
 }
 
 .skill-tag {
-  padding: 6px 12px;
+  padding: 4px 8px;
   background-color: rgba(148, 163, 184, 0.08);
   border-radius: 20px;
-  font-size: 14px;
+  font-size: 0.75rem;
   color: #94a3b8;
   transition: all 0.3s ease;
   border: 1px solid rgba(148, 163, 184, 0.15);

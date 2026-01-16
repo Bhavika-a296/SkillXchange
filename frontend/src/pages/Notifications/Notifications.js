@@ -7,7 +7,6 @@ const Notifications = () => {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // all, unread, read
 
   useEffect(() => {
     fetchNotifications();
@@ -88,14 +87,6 @@ const Notifications = () => {
     return date.toLocaleDateString();
   };
 
-  const filteredNotifications = notifications.filter(n => {
-    if (filter === 'unread') return !n.read;
-    if (filter === 'read') return n.read;
-    return true;
-  });
-
-  const unreadCount = notifications.filter(n => !n.read).length;
-
   if (loading) {
     return <div className="notifications-container loading">Loading notifications...</div>;
   }
@@ -104,33 +95,24 @@ const Notifications = () => {
     <div className="notifications-container">
       <div className="notifications-header">
         <h2>Notifications</h2>
-        {unreadCount > 0 && (
+        {notifications.length > 0 && (
           <button className="mark-all-read-btn" onClick={markAllAsRead}>
-            Mark all as read
+            Clear all
           </button>
         )}
       </div>
 
-      <div className="notifications-filters">
-        <button 
-          className={filter === 'all' ? 'filter-btn active' : 'filter-btn'}
-          onClick={() => setFilter('all')}
-        >
-          All ({notifications.length})
-        </button>
-      </div>
-
       <div className="notifications-list">
-        {filteredNotifications.length === 0 ? (
+        {notifications.length === 0 ? (
           <div className="no-notifications">
             <span className="no-notifications-icon">🔔</span>
-            <p>No notifications {filter !== 'all' && filter}</p>
+            <p>No new notifications</p>
           </div>
         ) : (
-          filteredNotifications.map(notification => (
+          notifications.map(notification => (
             <div
               key={notification.id}
-              className={`notification-item ${!notification.read ? 'unread' : ''}`}
+              className="notification-item unread"
               onClick={() => handleNotificationClick(notification)}
             >
               <div className="notification-icon">
@@ -141,7 +123,7 @@ const Notifications = () => {
                 <div className="notification-message">{notification.message}</div>
                 <div className="notification-time">{formatTime(notification.created_at)}</div>
               </div>
-              {!notification.read && <div className="unread-indicator"></div>}
+              <div className="unread-indicator"></div>
             </div>
           ))
         )}

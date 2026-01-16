@@ -1,0 +1,36 @@
+# ============================================================
+# Django Server Restart Instructions
+# ============================================================
+#
+# The SentenceTransformer model failed to load in the Django server
+# and needs to be reset. Follow these steps:
+#
+# 1. Find the terminal/console where Django is running
+#    (you'll see output like "POST /api/match_skills/")
+#
+# 2. Press CTRL+C or CTRL+BREAK to stop the server
+#
+# 3. Wait for it to stop completely
+#
+# 4. Start the server again:
+#    cd backend
+#    python manage.py runserver
+#
+# 5. The model will load fresh and should work correctly
+#
+# ============================================================
+# Why this happened:
+# ============================================================
+#
+# The model tried to load when Django first started but failed.
+# After 12 failed attempts, it gave up and stopped trying.
+# Restarting Django resets the failure counter and allows a
+# fresh attempt to load the model.
+#
+# The code has been updated to:
+# - Limit retry attempts to 3 instead of 12
+# - Better handle the failure state
+# - Provide clearer error messages
+#
+# This should prevent the issue from recurring.
+# ============================================================

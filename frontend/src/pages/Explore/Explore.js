@@ -61,16 +61,6 @@ const Explore = () => {
     setSearchTerm(e.target.value);
   };
 
-  const handleConnect = async (userId) => {
-    try {
-      await api.post(`/connections/request/${userId}/`);
-      // Refresh the users list
-      fetchUsers();
-    } catch (err) {
-      console.error('Error sending connection request:', err);
-    }
-  };
-
   return (
     <div className="explore-container">
       <div className="explore-header">
@@ -91,7 +81,7 @@ const Explore = () => {
           <div
             key={profile.user?.id || profile.user}
             className="user-card"
-            onClick={() => navigate(`/users/${profile.user?.username}`)}
+            onClick={() => navigate(`/users/${profile.user?.username}?skill=${encodeURIComponent(searchTerm.trim())}`)}
             style={{ cursor: 'pointer' }}
           >
             <div className="user-info">

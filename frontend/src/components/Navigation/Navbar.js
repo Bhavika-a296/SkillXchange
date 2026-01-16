@@ -8,12 +8,17 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [requestsCount, setRequestsCount] = useState(0);
 
   useEffect(() => {
     if (user) {
       fetchUnreadCount();
-      // Poll for new notifications every 30 seconds
-      const interval = setInterval(fetchUnreadCount, 30000);
+      fetchRequestsCount();
+      // Poll for new notifications and requests every 30 seconds
+      const interval = setInterval(() => {
+        fetchUnreadCount();
+        fetchRequestsCount();
+      }, 30000);
       return () => clearInterval(interval);
     }
   }, [user]);
@@ -27,6 +32,15 @@ const Navbar = () => {
     }
   };
 
+  const fetchRequestsCount = async () => {
+    try {
+      const { data } = await api.get('/learning/requests/');
+      setRequestsCount(data.requests?.length || 0);
+    } catch (error) {
+      console.error('Error fetching requests count:', error);
+    }
+  };
+
   return (
     <nav className="navbar">
       <div className="navbar-brand">
@@ -35,7 +49,15 @@ const Navbar = () => {
         </Link>
       </div>
       <div className="navbar-menu">
-        <Link to="/explore" className="nav-link">Explore</Link>
+        {user && <Link to="/learning" className="nav-link">🎓 Learning Hub</Link>}
+        {user && (
+          <Link to="/learning-requests" className="nav-link notification-link">
+            <span className="notification-icon">📚</span>
+            {requestsCount > 0 && (
+              <span className="notification-badge requests-badge">{requestsCount > 99 ? '99+' : requestsCount}</span>
+            )}
+          </Link>
+        )}
         {user && <Link to="/messages" className="nav-link">Messages</Link>}
         {user && (
           <Link to="/notifications" className="nav-link notification-link">

@@ -1,0 +1,185 @@
+.user-ratings-container {
+  margin-top: 30px;
+}
+
+.ratings-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.tab-btn {
+  padding: 12px 24px;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s ease;
+  margin-bottom: -2px;
+}
+
+.tab-btn:hover {
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.tab-btn.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+}
+
+.average-rating-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  color: white;
+}
+
+.avg-rating-display {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.avg-number {
+  font-size: 48px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.stars-display {
+  display: flex;
+  gap: 4px;
+}
+
+.stars-display .star {
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.stars-display .star.filled {
+  color: #ffd700;
+}
+
+.rating-count {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-left: auto;
+}
+
+.ratings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.rating-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.rating-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #667eea;
+}
+
+.rating-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.rater-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #1f2937;
+}
+
+.rater-info strong {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.skill-name {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.rating-card .stars-display .star {
+  font-size: 20px;
+  color: #d1d5db;
+}
+
+.rating-card .stars-display .star.filled {
+  color: #fbbf24;
+}
+
+.rating-feedback {
+  color: #4b5563;
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0 0 12px 0;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.rating-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.rating-footer small {
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.no-ratings {
+  text-align: center;
+  padding: 60px 20px;
+  color: #9ca3af;
+  background: #f9fafb;
+  border-radius: 12px;
+}
+
+.no-ratings p {
+  font-size: 16px;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .ratings-tabs {
+    flex-direction: column;
+  }
+
+  .tab-btn {
+    width: 100%;
+    text-align: left;
+  }
+
+  .avg-rating-display {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .rating-count {
+    margin-left: 0;
+  }
+
+  .rating-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
