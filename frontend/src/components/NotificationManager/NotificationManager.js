@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRealtime } from '../../contexts/RealtimeContext';
 import api from '../../services/api';
@@ -8,6 +8,14 @@ const NotificationManager = () => {
   const { user } = useAuth();
   const { ably } = useRealtime();
   const [popupNotifications, setPopupNotifications] = useState([]);
+  const seenNotificationKeysRef = useRef(new Set());
+
+  const getNotificationKey = (notification) => {
+    if (!notification) return null;
+    return notification.id
+      ? `id:${notification.id}`
+      : `${notification.notification_type || 'unknown'}:${notification.title || ''}:${notification.message || ''}:${notification.created_at || ''}`;
+  };
 
   useEffect(() => {
     if (!ably || !user) return;
@@ -57,11 +65,31 @@ const NotificationManager = () => {
   }, [user]);
 
   const showPopupNotification = (notification) => {
-    setPopupNotifications(prev => [...prev, { ...notification, id: notification.id || Date.now() }]);
+    const normalizedNotification = {
+      ...notification,
+      id: notification.id || Date.now(),
+    };
+    const notificationKey = getNotificationKey(normalizedNotification);
+
+    if (notificationKey && seenNotificationKeysRef.current.has(notificationKey)) {
+      return;
+    }
+
+    if (notificationKey) {
+      seenNotificationKeysRef.current.add(notificationKey);
+    }
+
+    setPopupNotifications((prev) => {
+      if (prev.some((item) => getNotificationKey(item) === notificationKey)) {
+        return prev;
+      }
+
+      return [...prev, normalizedNotification];
+    });
   };
 
   const removePopupNotification = (id) => {
-    setPopupNotifications(prev => prev.filter(n => n.id !== id));
+    setPopupNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
   const markNotificationAsRead = async (notificationId) => {
@@ -74,14 +102,14 @@ const NotificationManager = () => {
 
   return (
     <div className="notification-manager">
-      {popupNotifications.map((notification) => (
+      {popupNotifications.length > 0 && (
         <NotificationPopup
-          key={notification.id}
-          notification={notification}
-          onClose={() => removePopupNotification(notification.id)}
+          key={popupNotifications[0].id}
+          notification={popupNotifications[0]}
+          onClose={() => removePopupNotification(popupNotifications[0].id)}
           onMarkAsRead={markNotificationAsRead}
         />
-      ))}
+      )}
     </div>
   );
 };

@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import ResumeUpload from '../../components/ResumeUpload/ResumeUpload';
 import SkillsLearnedTaught from '../../components/SkillsLearnedTaught/SkillsLearnedTaught';
+import LearnerSkills from '../../components/LearnerSkills/LearnerSkills';
 import Badges from '../../components/Badges/Badges';
-import { profileApi } from '../../services/api';
+import VerificationBadges from '../../components/VerificationBadges/VerificationBadges';
+import { profileApi, authApi } from '../../services/api';
 import api from '../../services/api';
 import './Profile.css';
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [profile, setProfile] = useState(null);
   const [connections, setConnections] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [error, setError] = useState('');
   const [streakData, setStreakData] = useState({
     currentStreak: 0,
@@ -108,6 +113,27 @@ const Profile = () => {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm(
+      'Delete your account permanently? This action cannot be undone.'
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setIsDeletingAccount(true);
+      await authApi.deleteAccount();
+      await logout();
+      navigate('/login');
+    } catch (err) {
+      console.error('Error deleting account:', err);
+      setError(err.response?.data?.message || 'Failed to delete account. Please try again.');
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
+
   if (loading) {
     return <div className="profile-container loading">Loading...</div>;
   }
@@ -139,12 +165,21 @@ const Profile = () => {
 
       <div className="profile-header">
         <h2>{profile.user?.username || 'My'} Profile</h2>
-        <button 
-          className="button-primary"
-          onClick={() => setIsEditing(!isEditing)}
-        >
-          {isEditing ? 'Cancel' : 'Edit Profile'}
-        </button>
+        <div className="profile-header-actions">
+          <button 
+            className="button-primary"
+            onClick={() => setIsEditing(!isEditing)}
+          >
+            {isEditing ? 'Cancel' : 'Edit Profile'}
+          </button>
+          <button
+            className="button-danger"
+            onClick={handleDeleteAccount}
+            disabled={isDeletingAccount}
+          >
+            {isDeletingAccount ? 'Deleting...' : 'Delete Account'}
+          </button>
+        </div>
       </div>
 
       {/* About Me - Horizontal Card */}
@@ -194,9 +229,22 @@ const Profile = () => {
           </div>
           <div className="contribution-graph">
             <div className="months-labels">
-              {['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'].map((month, idx) => (
-                <span key={idx} className="month-label">{month}</span>
-              ))}
+              {(() => {
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const today = new Date();
+                const months = [];
+                
+                // Generate month labels for the past 365 days
+                for (let i = 12; i >= 0; i--) {
+                  const date = new Date(today);
+                  date.setMonth(date.getMonth() - i);
+                  months.push(monthNames[date.getMonth()]);
+                }
+                
+                return months.map((month, idx) => (
+                  <span key={idx} className="month-label">{month}</span>
+                ));
+              })()}
             </div>
             <div className="contributions-grid">
               {streakData.contributions.map((day, idx) => {
@@ -214,13 +262,43 @@ const Profile = () => {
         </section>
 
         <section className="learning-journey-section">
-          <h3>Learning Journey on SkillXchange</h3>
+          <h3>Completed Learning Sessions</h3>
           <SkillsLearnedTaught />
         </section>
 
+        <section className="learned-skills-section">
+          <h3>Skills Verified as Learner</h3>
+          <LearnerSkills username={profile.user?.username} />
+        </section>
+
         <section className="badges-section">
-          <h3>🏆 Achievements & Badges</h3>
+          <h3>
+            <span className="section-title-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M7 4h10v3a5 5 0 0 1-10 0V4Z" />
+                <path d="M7 7H5a2 2 0 0 0 2 2M17 7h2a2 2 0 0 1-2 2" />
+                <path d="M12 12v5M9 20h6" />
+              </svg>
+            </span>
+            Achievements & Badges
+          </h3>
           <Badges />
+        </section>
+
+        <section className="verification-section">
+          <h3>
+            <span className="section-title-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3 5 6v6c0 5 3.4 8 7 9 3.6-1 7-4 7-9V6l-7-3Z" />
+                <path d="m9 12 2 2 4-4" />
+              </svg>
+            </span>
+            Skills Verified as Teacher
+          </h3>
+          <VerificationBadges 
+            username={profile.user?.username} 
+            isOwnProfile={true} 
+          />
         </section>
 
         <section className="connections-section">

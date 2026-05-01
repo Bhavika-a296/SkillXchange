@@ -42,8 +42,23 @@
 }
 
 .no-requests-icon {
-  font-size: 4rem;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 1rem;
+  color: #c56a8b;
+  background: #f4eef2;
+  border: 1px solid #d9bec8;
+  border-radius: 50%;
+}
+
+.request-svg {
+  width: 38px;
+  height: 38px;
+  display: block;
 }
 
 .no-requests h3 {
@@ -92,7 +107,7 @@
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2f7f73 0%, #5ea89c 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -121,7 +136,7 @@
 }
 
 .learner-name:hover {
-  color: #667eea;
+  color: #f39ac1;
 }
 
 .request-date {
@@ -136,7 +151,7 @@
 
 .skill-badge {
   display: inline-block;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2f7f73 0%, #5ea89c 100%);
   color: white;
   padding: 0.5rem 1rem;
   border-radius: 20px;
@@ -175,7 +190,7 @@
 }
 
 .points-highlight {
-  color: #667eea;
+  color: #f39ac1;
 }
 
 .request-actions {
@@ -225,18 +240,27 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2f7f73 0%, #5ea89c 100%);
   color: white;
   padding: 0.75rem 1.5rem;
 }
 
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 8px rgba(243, 154, 193, 0.2);
 }
 
 .icon {
   font-size: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
 }
 
 .spinner-small {
@@ -277,3 +301,5 @@
     flex-direction: column;
   }
 }
+
+

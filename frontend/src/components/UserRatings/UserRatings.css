@@ -23,17 +23,17 @@
 }
 
 .tab-btn:hover {
-  color: #667eea;
+  color: #f39ac1;
   background: rgba(102, 126, 234, 0.05);
 }
 
 .tab-btn.active {
-  color: #667eea;
-  border-bottom-color: #667eea;
+  color: #f39ac1;
+  border-bottom-color: #f39ac1;
 }
 
 .average-rating-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2f7f73 0%, #5ea89c 100%);
   padding: 24px;
   border-radius: 12px;
   margin-bottom: 20px;
@@ -58,8 +58,18 @@
 }
 
 .stars-display .star {
-  font-size: 24px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: rgba(255, 255, 255, 0.3);
+}
+
+.stars-display .star svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .stars-display .star.filled {
@@ -88,7 +98,7 @@
 
 .rating-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-color: #667eea;
+  border-color: #f39ac1;
 }
 
 .rating-header {
@@ -116,7 +126,8 @@
 }
 
 .rating-card .stars-display .star {
-  font-size: 20px;
+  width: 20px;
+  height: 20px;
   color: #d1d5db;
 }
 
@@ -183,3 +194,5 @@
     gap: 10px;
   }
 }
+
+

@@ -2,7 +2,8 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import (
     UserProfile, Skill, Resume, SkillMatch, Connection, Message, Notification,
-    LearningSession, UserPoints, PointTransaction, SkillRating, PointConfiguration, Badge
+    LearningSession, UserPoints, PointTransaction, SkillRating, PointConfiguration, Badge,
+    SkillQuiz, TeacherVerification, TeacherQuizAttempt
 )
 
 class UserSerializer(serializers.ModelSerializer):
@@ -129,6 +130,7 @@ class LearningSessionSerializer(serializers.ModelSerializer):
     teacher = UserSerializer(read_only=True)
     progress_percentage = serializers.ReadOnlyField()
     days_remaining = serializers.ReadOnlyField()
+    can_take_quiz = serializers.SerializerMethodField()
     
     class Meta:
         model = LearningSession
@@ -136,15 +138,30 @@ class LearningSessionSerializer(serializers.ModelSerializer):
             'id', 'learner', 'teacher', 'skill_name', 'status',
             'total_days', 'start_date', 'end_date',
             'points_deducted', 'points_awarded_learner', 'points_awarded_teacher',
-            'progress_percentage', 'days_remaining',
+            'progress_percentage', 'days_remaining', 'can_take_quiz',
             'created_at', 'updated_at'
         )
         read_only_fields = (
             'learner', 'teacher', 'start_date', 'end_date',
             'points_deducted', 'points_awarded_learner', 'points_awarded_teacher',
-            'progress_percentage', 'days_remaining',
+            'progress_percentage', 'days_remaining', 'can_take_quiz',
             'created_at', 'updated_at'
         )
+    
+    def get_can_take_quiz(self, obj):
+        """Check if learner can take quiz (learning session is completed and not yet verified)"""
+        from .models import LearnerSkillVerification
+        if obj.status != 'completed':
+            return False
+        
+        # Check if already verified
+        verification = LearnerSkillVerification.objects.filter(
+            learner=obj.learner,
+            skill_name=obj.skill_name,
+            is_verified=True
+        ).exists()
+        
+        return not verification  # Can take quiz if not already verified
 
 
 class SkillRatingSerializer(serializers.ModelSerializer):
@@ -170,3 +187,31 @@ class BadgeSerializer(serializers.ModelSerializer):
         model = Badge
         fields = ('id', 'badge_type', 'badge_name', 'icon', 'earned_at')
         read_only_fields = ('id', 'badge_type', 'badge_name', 'icon', 'earned_at')
+
+
+class SkillQuizSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SkillQuiz
+        fields = ('id', 'skill_name', 'question', 'options', 'difficulty', 'created_at')
+        read_only_fields = ('id', 'created_at')
+
+
+class TeacherVerificationSerializer(serializers.ModelSerializer):
+    teacher = UserSerializer(read_only=True)
+    difficulty = serializers.CharField(read_only=True)
+    
+    class Meta:
+        model = TeacherVerification
+        fields = ('id', 'teacher', 'skill_name', 'score', 'correct_answers', 'total_questions', 
+                  'status', 'is_verified', 'verified_date', 'created_at')
+        read_only_fields = ('id', 'teacher', 'score', 'correct_answers', 'total_questions',
+                           'status', 'is_verified', 'verified_date', 'created_at')
+
+
+class TeacherQuizAttemptSerializer(serializers.ModelSerializer):
+    teacher = UserSerializer(read_only=True)
+    
+    class Meta:
+        model = TeacherQuizAttempt
+        fields = ('id', 'teacher', 'skill_name', 'answers', 'score', 'attempted_at')
+        read_only_fields = ('id', 'teacher', 'score', 'attempted_at')

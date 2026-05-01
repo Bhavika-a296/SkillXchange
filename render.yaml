@@ -1,0 +1,38 @@
+services:
+  # Backend - Django API
+  - type: web
+    name: skillxchange-backend
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn backend.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DATABASE_URL
+        fromDatabase:
+          name: skillxchange-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: False
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+    healthCheckPath: /api/
+    
+  # Frontend - React
+  - type: web
+    name: skillxchange-frontend
+    runtime: node
+    buildCommand: cd frontend && npm install && npm run build
+    startCommand: cd frontend && npx serve -s build -p $PORT
+    envVars:
+      - key: NODE_VERSION
+        value: 18.17.0
+      - key: REACT_APP_API_URL
+        value: https://skillxchange-backend.onrender.com
+
+databases:
+  - name: skillxchange-db
+    databaseName: skillxchange
+    user: skillxchange

@@ -16,6 +16,9 @@ import Learning from './pages/Learning/Learning';
 import LearningRequests from './components/LearningRequests/LearningRequests';
 import Rating from './pages/Rating/Rating';
 import ResumeUpload from './components/ResumeUpload/ResumeUpload';
+import DebugMatch from './pages/Debug/DebugMatch';
+import Leaderboard from './pages/Leaderboard/Leaderboard';
+import TeacherQuiz from './pages/Quiz/TeacherQuiz';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
@@ -81,6 +84,14 @@ function App() {
                   }
                 />
                 <Route
+                  path="/leaderboard"
+                  element={
+                    <ProtectedRoute>
+                      <Leaderboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="/rate-session/:sessionId"
                   element={
                     <ProtectedRoute>
@@ -101,6 +112,22 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <ResumeUpload />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/debug-match"
+                  element={
+                    <ProtectedRoute>
+                      <DebugMatch />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/quiz"
+                  element={
+                    <ProtectedRoute>
+                      <TeacherQuiz />
                     </ProtectedRoute>
                   }
                 />

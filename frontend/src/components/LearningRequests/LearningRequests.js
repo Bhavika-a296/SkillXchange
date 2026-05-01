@@ -102,7 +102,12 @@ const LearningRequests = () => {
 
       {requests.length === 0 ? (
         <div className="no-requests">
-          <div className="no-requests-icon">📫</div>
+          <div className="no-requests-icon" aria-hidden="true">
+            <svg className="request-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="6" y="4" width="12" height="16" rx="2" />
+              <path d="M9 8h6M9 12h6" />
+            </svg>
+          </div>
           <h3>No pending requests</h3>
           <p>You don't have any learning requests at the moment.</p>
         </div>
@@ -167,7 +172,11 @@ const LearningRequests = () => {
                     </>
                   ) : (
                     <>
-                      <span className="icon">✓</span>
+                      <span className="icon" aria-hidden="true">
+                        <svg className="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="m5 13 4 4L19 7" />
+                        </svg>
+                      </span>
                       Accept
                     </>
                   )}
@@ -184,7 +193,11 @@ const LearningRequests = () => {
                     </>
                   ) : (
                     <>
-                      <span className="icon">✕</span>
+                      <span className="icon" aria-hidden="true">
+                        <svg className="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="m18 6-12 12M6 6l12 12" />
+                        </svg>
+                      </span>
                       Reject
                     </>
                   )}

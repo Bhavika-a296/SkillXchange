@@ -119,6 +119,21 @@ class DailyLogin(models.Model):
         return f"{self.user.username} - {self.login_date}"
 
 
+class UserActivitySession(models.Model):
+    """Track user login/logout sessions for actual time-spent calculations."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='activity_sessions')
+    login_time = models.DateTimeField()
+    logout_time = models.DateTimeField(null=True, blank=True)
+    duration_seconds = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-login_time']
+
+    def __str__(self):
+        return f"{self.user.username}: {self.login_time} -> {self.logout_time or 'active'}"
+
+
 class Notification(models.Model):
     """Store notifications for users"""
     NOTIFICATION_TYPES = [
@@ -305,6 +320,124 @@ class Badge(models.Model):
             'teacher_10': '💫',
         }
         return icons.get(self.badge_type, '🏅')
+
+
+class SkillQuiz(models.Model):
+    """Store quiz questions for skill verification"""
+    DIFFICULTY_CHOICES = [
+        ('easy', 'Easy'),
+        ('medium', 'Medium'),
+        ('hard', 'Hard'),
+    ]
+    
+    skill_name = models.CharField(max_length=100, db_index=True)
+    question = models.TextField()
+    options = models.JSONField()  # ["Option A", "Option B", "Option C", "Option D"]
+    correct_index = models.IntegerField()  # 0, 1, 2, or 3
+    difficulty = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES, default='medium')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['skill_name', 'id']
+        indexes = [
+            models.Index(fields=['skill_name']),
+        ]
+    
+    def __str__(self):
+        return f"{self.skill_name} - Q{self.id}"
+
+
+class TeacherVerification(models.Model):
+    """Track teacher quiz attempts and verification status"""
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('passed', 'Passed'),
+        ('failed', 'Failed'),
+    ]
+    
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='skill_verifications')
+    skill_name = models.CharField(max_length=100)
+    score = models.IntegerField(default=0)  # 0-100
+    total_questions = models.IntegerField(default=0)
+    correct_answers = models.IntegerField(default=0)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    is_verified = models.BooleanField(default=False)  # True if score >= 70
+    verified_date = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ('teacher', 'skill_name')
+        ordering = ['-verified_date', '-created_at']
+        indexes = [
+            models.Index(fields=['teacher', 'skill_name']),
+            models.Index(fields=['is_verified']),
+        ]
+    
+    def __str__(self):
+        return f"{self.teacher.username} - {self.skill_name}: {self.score}%"
+
+
+class TeacherQuizAttempt(models.Model):
+    """Track individual quiz attempts with answers"""
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='quiz_attempts')
+    skill_name = models.CharField(max_length=100)
+    answers = models.JSONField()  # {question_id: selected_option_index}
+    score = models.IntegerField()  # 0-100
+    attempted_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-attempted_at']
+    
+    def __str__(self):
+        return f"{self.teacher.username} - {self.skill_name} attempt"
+
+
+class LearnerSkillVerification(models.Model):
+    """Track learner quiz attempts and skill verification status after learning"""
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('passed', 'Passed'),
+        ('failed', 'Failed'),
+    ]
+    
+    learner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='learner_skill_verifications')
+    learning_session = models.OneToOneField(LearningSession, on_delete=models.CASCADE, related_name='quiz_verification', null=True, blank=True)
+    skill_name = models.CharField(max_length=100)
+    score = models.IntegerField(default=0)  # 0-100
+    total_questions = models.IntegerField(default=0)
+    correct_answers = models.IntegerField(default=0)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    is_verified = models.BooleanField(default=False)  # True if score >= 70
+    verified_date = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ('learner', 'skill_name')
+        ordering = ['-verified_date', '-created_at']
+        indexes = [
+            models.Index(fields=['learner', 'skill_name']),
+            models.Index(fields=['is_verified']),
+        ]
+    
+    def __str__(self):
+        return f"{self.learner.username} - {self.skill_name}: {self.score}%"
+
+
+class LearnerQuizAttempt(models.Model):
+    """Track individual learner quiz attempts with answers"""
+    learner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='learner_quiz_attempts')
+    skill_name = models.CharField(max_length=100)
+    answers = models.JSONField()  # {question_id: selected_option_index}
+    score = models.IntegerField()  # 0-100
+    attempted_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-attempted_at']
+    
+    def __str__(self):
+        return f"{self.learner.username} - {self.skill_name} attempt"
 
 
 @receiver(post_save, sender=User)

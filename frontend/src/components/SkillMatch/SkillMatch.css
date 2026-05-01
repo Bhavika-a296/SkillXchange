@@ -1,4 +1,4 @@
-.skill-match {
+﻿.skill-match {
   max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
@@ -32,7 +32,7 @@
 
 .search-button {
   padding: 0.75rem 1.5rem;
-  background-color: #2563eb;
+  background-color: #e88fb7;
   color: white;
   border: none;
   border-radius: 0.375rem;
@@ -42,7 +42,7 @@
 }
 
 .search-button:hover {
-  background-color: #1d4ed8;
+  background-color: #df88b0;
 }
 
 .search-button:disabled {
@@ -80,13 +80,13 @@
 }
 
 .match-header h4 {
-  color: #2563eb;
+  color: #e88fb7;
   margin: 0;
 }
 
 .similarity-score {
-  background-color: #dbeafe;
-  color: #1e40af;
+  background-color: #fef2f8;
+  color: #d97ea8;
   padding: 0.25rem 0.5rem;
   border-radius: 9999px;
   font-size: 0.875rem;
@@ -101,7 +101,7 @@
 .connect-button {
   width: 100%;
   padding: 0.5rem;
-  background-color: #2563eb;
+  background-color: #e88fb7;
   color: white;
   border: none;
   border-radius: 0.375rem;
@@ -111,7 +111,7 @@
 }
 
 .connect-button:hover {
-  background-color: #1d4ed8;
+  background-color: #df88b0;
 }
 
 .no-matches {
@@ -122,3 +122,4 @@
   border-radius: 0.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
+

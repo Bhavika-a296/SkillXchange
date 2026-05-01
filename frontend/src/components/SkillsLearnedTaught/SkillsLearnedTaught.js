@@ -3,10 +3,8 @@ import axios from 'axios';
 import './SkillsLearnedTaught.css';
 
 const SkillsLearnedTaught = ({ username }) => {
-  const [skillsLearned, setSkillsLearned] = useState([]);
   const [skillsTaught, setSkillsTaught] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('learned');
 
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
@@ -16,18 +14,11 @@ const SkillsLearnedTaught = ({ username }) => {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Token ${token}` };
 
-      const [learnedResponse, taughtResponse] = await Promise.all([
-        axios.get(
-          `${API_BASE_URL}/api/learning/skills-learned/${username ? username + '/' : ''}`,
-          { headers }
-        ),
-        axios.get(
-          `${API_BASE_URL}/api/learning/skills-taught/${username ? username + '/' : ''}`,
-          { headers }
-        )
-      ]);
+      const taughtResponse = await axios.get(
+        `${API_BASE_URL}/api/learning/skills-taught/${username ? username + '/' : ''}`,
+        { headers }
+      );
 
-      setSkillsLearned(learnedResponse.data);
       setSkillsTaught(taughtResponse.data);
     } catch (error) {
       console.error('Error fetching skills:', error);
@@ -49,7 +40,19 @@ const SkillsLearnedTaught = ({ username }) => {
       <div key={session.id} className="skill-card">
         <div className="skill-card-header">
           <h4 className="skill-card-title">{session.skill_name}</h4>
-          <span className="skill-card-badge">{type === 'learned' ? '📚' : '🎓'}</span>
+          <span className="skill-card-badge" aria-hidden="true">
+            {type === 'learned' ? (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="6" y="4" width="12" height="16" rx="2" />
+                <path d="M9 8h6M9 12h6" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6.5 12 3l9 3.5L12 10 3 6.5Z" />
+                <path d="M6 8v4.5c0 1.7 2.7 3 6 3s6-1.3 6-3V8" />
+              </svg>
+            )}
+          </span>
         </div>
         <div className="skill-card-body">
           <p className="skill-card-user">
@@ -75,47 +78,21 @@ const SkillsLearnedTaught = ({ username }) => {
 
   return (
     <div className="skills-section">
-      <div className="skills-tabs">
-        <button
-          className={`tab-button ${activeTab === 'learned' ? 'active' : ''}`}
-          onClick={() => setActiveTab('learned')}
-        >
-          Skills Learned ({skillsLearned.length})
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'taught' ? 'active' : ''}`}
-          onClick={() => setActiveTab('taught')}
-        >
-          Skills Taught ({skillsTaught.length})
-        </button>
+      <div className="skills-header">
+        <h4>Skills Taught ({skillsTaught.length})</h4>
       </div>
 
       <div className="skills-content">
-        {activeTab === 'learned' && (
-          <div className="skills-grid">
-            {skillsLearned.length > 0 ? (
-              skillsLearned.map(session => renderSkillCard(session, 'learned'))
-            ) : (
-              <div className="empty-state">
-                <p>No skills learned yet</p>
-                <small>Complete learning sessions to see them here</small>
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'taught' && (
-          <div className="skills-grid">
-            {skillsTaught.length > 0 ? (
-              skillsTaught.map(session => renderSkillCard(session, 'taught'))
-            ) : (
-              <div className="empty-state">
-                <p>No skills taught yet</p>
-                <small>Help others learn to see them here</small>
-              </div>
-            )}
-          </div>
-        )}
+        <div className="skills-grid">
+          {skillsTaught.length > 0 ? (
+            skillsTaught.map((session) => renderSkillCard(session, 'taught'))
+          ) : (
+            <div className="empty-state">
+              <p>No skills taught yet</p>
+              <small>Help others learn to see them here</small>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

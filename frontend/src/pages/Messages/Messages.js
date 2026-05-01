@@ -387,7 +387,14 @@ const Messages = () => {
               {connectionStatus === 'pending' && !isRequester && (
                 <div className="connection-request-banner">
                   <div className="banner-content">
-                    <span className="banner-icon">👥</span>
+                    <span className="banner-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M16 19a4 4 0 0 0-8 0" />
+                        <circle cx="12" cy="11" r="3" />
+                        <path d="M19 19a3 3 0 0 0-3-2.8" />
+                        <circle cx="18" cy="10" r="2" />
+                      </svg>
+                    </span>
                     <div className="banner-text">
                       <strong>{selectedUser.username}</strong> sent you a connection request
                     </div>
@@ -422,7 +429,13 @@ const Messages = () => {
                               rel="noopener noreferrer"
                               className="file-download"
                             >
-                              📎 {msg.file_name || 'Download File'}
+                              <span className="inline-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M14 3v7a3 3 0 1 1-6 0V6a2 2 0 0 1 4 0v4a1 1 0 0 1-2 0V7" />
+                                  <path d="M6 12v2a6 6 0 0 0 12 0V8" />
+                                </svg>
+                              </span>
+                              {msg.file_name || 'Download File'}
                             </a>
                           </div>
                         )}
@@ -447,9 +460,19 @@ const Messages = () => {
                 <div className="message-input-container">
                   {selectedFile && (
                     <div className="selected-file-preview">
-                      <span>📎 {selectedFile.name}</span>
+                      <span className="selected-file-name">
+                        <span className="inline-icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 3v7a3 3 0 1 1-6 0V6a2 2 0 0 1 4 0v4a1 1 0 0 1-2 0V7" />
+                            <path d="M6 12v2a6 6 0 0 0 12 0V8" />
+                          </svg>
+                        </span>
+                        {selectedFile.name}
+                      </span>
                       <button onClick={removeSelectedFile} className="remove-file">
-                        ✕
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M18 6 6 18M6 6l12 12" />
+                        </svg>
                       </button>
                     </div>
                   )}
@@ -466,7 +489,10 @@ const Messages = () => {
                       onClick={() => fileInputRef.current?.click()}
                       className="attach-btn"
                     >
-                      📎
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M14 3v7a3 3 0 1 1-6 0V6a2 2 0 0 1 4 0v4a1 1 0 0 1-2 0V7" />
+                        <path d="M6 12v2a6 6 0 0 0 12 0V8" />
+                      </svg>
                     </button>
                     <input
                       type="text"
@@ -476,7 +502,11 @@ const Messages = () => {
                       className="message-input"
                     />
                     <button type="submit" className="send-btn" disabled={sending}>
-                      {sending ? '...' : '➤'}
+                      {sending ? '...' : (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="m22 2-7 20-4-9-9-4 20-7Z" />
+                        </svg>
+                      )}
                     </button>
                   </form>
                 </div>

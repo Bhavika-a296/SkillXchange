@@ -127,7 +127,9 @@ const RatingFeedback = ({ sessionId, onSubmitSuccess }) => {
                 onMouseEnter={() => setHoveredRating(star)}
                 onMouseLeave={() => setHoveredRating(0)}
               >
-                ★
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="m12 2.5 2.8 5.8 6.4.9-4.6 4.5 1.1 6.3L12 17l-5.7 3 1.1-6.3L2.8 9.2l6.4-.9L12 2.5Z" />
+                </svg>
               </button>
             ))}
           </div>

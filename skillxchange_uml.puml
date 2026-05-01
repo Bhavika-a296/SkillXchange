@@ -1,0 +1,132 @@
+@startuml SkillXchange_UML
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam classBackgroundColor #FFE6E6
+skinparam classBorderColor #333333
+
+' Core Entity
+class SkillXchange {
+    platform
+}
+
+' User Management Layer
+class User {
+    + email: String
+    + first_name: String
+    + last_name: String
+    + bio: String
+    + profile_picture: File
+}
+
+class UserProfile {
+    + user_id: int
+    + resume: File
+    + verification_status: String
+}
+
+' Skill System
+class Skill {
+    + name: String
+    + category: String
+    + description: String
+}
+
+class UserSkill {
+    + user_id: int
+    + skill_id: int
+    + proficiency_level: String
+}
+
+' Learning System
+class LearningRequest {
+    + learner_id: int
+    + skill_id: int
+    + status: String
+    + created_at: DateTime
+    + get_matches()
+}
+
+class LearningMatch {
+    + learner_id: int
+    + teacher_id: int
+    + match_score: Float
+    + status: String
+    + calculate_compatibility()
+}
+
+' Quiz & Verification
+class Quiz {
+    + skill_id: int
+    + title: String
+    + difficulty: String
+    + passing_score: int
+}
+
+class QuizQuestion {
+    + quiz_id: int
+    + question_text: String
+    + correct_answer: String
+}
+
+class QuizAttempt {
+    + user_id: int
+    + quiz_id: int
+    + score: int
+    + passed: Boolean
+    + submit_answer()
+}
+
+class SkillVerification {
+    + user_id: int
+    + skill_id: int
+    + status: String
+    + verified_date: DateTime
+}
+
+' Messaging System
+class Message {
+    + sender_id: int
+    + receiver_id: int
+    + content: String
+    + read_at: DateTime
+    + mark_as_read()
+}
+
+' Rating System
+class Rating {
+    + rater_id: int
+    + ratee_id: int
+    + rating_score: int
+    + feedback: String
+}
+
+' Relationships
+SkillXchange "1" --> "*" User : manages
+SkillXchange "1" --> "*" Skill : contains
+SkillXchange "1" --> "*" LearningRequest : processes
+
+User "1" --> "1" UserProfile : has
+User "1" --> "*" UserSkill : possesses
+User "1" --> "*" LearningRequest : creates
+User "1" --> "*" LearningMatch : participates
+User "1" --> "*" QuizAttempt : takes
+User "1" --> "*" Message : sends
+User "1" --> "*" Rating : gives
+
+UserSkill "*" --> "1" Skill : references
+
+LearningRequest "1" --> "*" LearningMatch : generates
+LearningMatch "*" --> "1" User : pairs_with
+
+Skill "1" --> "*" Quiz : has
+Skill "1" --> "*" SkillVerification : verified_by
+
+Quiz "1" --> "*" QuizQuestion : contains
+Quiz "1" --> "*" QuizAttempt : taken_as
+QuizAttempt "1" --> "1" SkillVerification : results_in
+
+Message "*" --> "1" User : recipient
+
+Rating "1" --> "1" LearningMatch : evaluates
+
+@enduml

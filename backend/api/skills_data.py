@@ -35,3 +35,26 @@ COMMON_SKILLS = {
     'ui/ux', 'photoshop', 'illustrator', 'figma', 'sketch', 'adobe xd',
     'indesign', 'after effects',
 }
+
+
+def get_skill_vocabulary():
+    """Return the known skill vocabulary used for extraction.
+
+    This combines the curated common skills list with any skills already stored
+    in the database so newly added skills can be matched without code changes.
+    """
+    vocabulary = {skill.lower() for skill in COMMON_SKILLS}
+
+    try:
+        from .models import Skill
+
+        vocabulary.update(
+            skill_name.strip().lower()
+            for skill_name in Skill.objects.values_list('name', flat=True)
+            if skill_name
+        )
+    except Exception:
+        # Database may not be ready during migrations or first startup.
+        pass
+
+    return vocabulary

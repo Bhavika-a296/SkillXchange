@@ -1,7 +1,9 @@
 from django.contrib import admin
 from .models import (
     UserProfile, Skill, Resume, SkillMatch,
-    LearningSession, UserPoints, PointTransaction, SkillRating, PointConfiguration, Badge
+    LearningSession, UserPoints, PointTransaction, SkillRating, PointConfiguration, Badge,
+    SkillQuiz, TeacherVerification, TeacherQuizAttempt,
+    LearnerSkillVerification, LearnerQuizAttempt
 )
 
 @admin.register(UserProfile)
@@ -67,3 +69,38 @@ class BadgeAdmin(admin.ModelAdmin):
     list_display = ('user', 'badge_type', 'earned_at')
     list_filter = ('badge_type', 'earned_at')
     search_fields = ('user__username',)
+
+
+@admin.register(SkillQuiz)
+class SkillQuizAdmin(admin.ModelAdmin):
+    list_display = ('skill_name', 'difficulty', 'created_at')
+    list_filter = ('skill_name', 'difficulty', 'created_at')
+    search_fields = ('skill_name', 'question')
+
+
+@admin.register(TeacherVerification)
+class TeacherVerificationAdmin(admin.ModelAdmin):
+    list_display = ('teacher', 'skill_name', 'score', 'status', 'is_verified', 'verified_date')
+    list_filter = ('status', 'is_verified', 'created_at')
+    search_fields = ('teacher__username', 'skill_name')
+
+
+@admin.register(TeacherQuizAttempt)
+class TeacherQuizAttemptAdmin(admin.ModelAdmin):
+    list_display = ('teacher', 'skill_name', 'score', 'attempted_at')
+    list_filter = ('skill_name', 'attempted_at')
+    search_fields = ('teacher__username', 'skill_name')
+
+
+@admin.register(LearnerSkillVerification)
+class LearnerSkillVerificationAdmin(admin.ModelAdmin):
+    list_display = ('learner', 'skill_name', 'score', 'status', 'is_verified', 'verified_date')
+    list_filter = ('status', 'is_verified', 'created_at')
+    search_fields = ('learner__username', 'skill_name')
+
+
+@admin.register(LearnerQuizAttempt)
+class LearnerQuizAttemptAdmin(admin.ModelAdmin):
+    list_display = ('learner', 'skill_name', 'score', 'attempted_at')
+    list_filter = ('skill_name', 'attempted_at')
+    search_fields = ('learner__username', 'skill_name')

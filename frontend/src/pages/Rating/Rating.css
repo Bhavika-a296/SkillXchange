@@ -1,4 +1,4 @@
-.rating-page {
+﻿.rating-page {
   max-width: 800px;
   margin: 0 auto;
   padding: 40px 20px;
@@ -29,8 +29,8 @@
 }
 
 .back-button:hover {
-  border-color: #667eea;
-  color: #667eea;
+  border-color: #f39ac1;
+  color: #f39ac1;
   background: rgba(102, 126, 234, 0.05);
 }
 
@@ -43,3 +43,5 @@
     padding: 24px;
   }
 }
+
+

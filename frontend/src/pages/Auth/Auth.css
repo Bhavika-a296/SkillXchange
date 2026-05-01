@@ -30,7 +30,7 @@
 
 .auth-card h2 {
   text-align: center;
-  background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+  background: linear-gradient(135deg, #2f7f73 0%, #7ec4b8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -78,8 +78,8 @@
 .form-group textarea:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  border-color: #f39ac1;
+  box-shadow: 0 0 0 4px rgba(243, 154, 193, 0.1);
   background: #ffffff;
 }
 
@@ -90,7 +90,7 @@
 }
 
 .form-help.checking {
-  color: #3b82f6;
+  color: #f39ac1;
 }
 
 .form-help.error {
@@ -131,13 +131,14 @@ input.invalid {
 }
 
 .auth-link a {
-  color: #2563eb;
+  color: #e88fb7;
   text-decoration: none;
   font-weight: 600;
   transition: all 0.3s ease;
 }
 
 .auth-link a:hover {
-  color: #1e40af;
+  color: #d97ea8;
   text-decoration: underline;
 }
+

@@ -1,4 +1,4 @@
-.navigation {
+﻿.navigation {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -10,7 +10,7 @@
 .nav-brand .brand {
   font-size: 1.5rem;
   font-weight: bold;
-  color: #007bff;
+  color: #f39ac1;
   text-decoration: none;
 }
 
@@ -33,11 +33,11 @@
 }
 
 .nav-button:not(.register) {
-  color: #007bff;
+  color: #f39ac1;
 }
 
 .nav-button.register {
-  background-color: #007bff;
+  background-color: #f39ac1;
   color: white;
 }
 
@@ -99,3 +99,4 @@
 .logout-btn:hover {
   background-color: #fff5f5;
 }
+

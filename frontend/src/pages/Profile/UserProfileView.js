@@ -5,6 +5,7 @@ import JoinLearning from '../../components/JoinLearning/JoinLearning';
 import SkillsLearnedTaught from '../../components/SkillsLearnedTaught/SkillsLearnedTaught';
 import UserRatings from '../../components/UserRatings/UserRatings';
 import Badges from '../../components/Badges/Badges';
+import VerificationBadges from '../../components/VerificationBadges/VerificationBadges';
 import './Profile.css';
 
 const UserProfileView = () => {
@@ -81,7 +82,13 @@ const UserProfileView = () => {
           <h3>Skills</h3>
           {searchedSkill && (
             <div className="searched-skill-banner">
-              🔍 Showing match for: <strong>{searchedSkill}</strong>
+              <span className="inline-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-3.5-3.5" />
+                </svg>
+              </span>
+              Showing match for: <strong>{searchedSkill}</strong>
             </div>
           )}
           <div className="skills-list">
@@ -115,7 +122,13 @@ const UserProfileView = () => {
                           handleJoinLearning(skill.name);
                         }}
                       >
-                        📚 Start Learning
+                        <span className="inline-icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="6" y="4" width="12" height="16" rx="2" />
+                            <path d="M9 8h6M9 12h6" />
+                          </svg>
+                        </span>
+                        Start Learning
                       </button>
                     </div>
                   ))}
@@ -132,8 +145,33 @@ const UserProfileView = () => {
         </section>
 
         <section className="badges-section">
-          <h3>🏆 Achievements & Badges</h3>
+          <h3>
+            <span className="section-title-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M7 4h10v3a5 5 0 0 1-10 0V4Z" />
+                <path d="M7 7H5a2 2 0 0 0 2 2M17 7h2a2 2 0 0 1-2 2" />
+                <path d="M12 12v5M9 20h6" />
+              </svg>
+            </span>
+            Achievements & Badges
+          </h3>
           <Badges username={username} />
+        </section>
+
+        <section className="verification-section">
+          <h3>
+            <span className="section-title-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3 5 6v6c0 5 3.4 8 7 9 3.6-1 7-4 7-9V6l-7-3Z" />
+                <path d="m9 12 2 2 4-4" />
+              </svg>
+            </span>
+            Skills Verified as Teacher
+          </h3>
+          <VerificationBadges 
+            username={username} 
+            isOwnProfile={false} 
+          />
         </section>
 
         <section className="ratings-section">
@@ -152,7 +190,11 @@ const UserProfileView = () => {
       {showJoinModal && (
         <div className="modal-overlay" onClick={() => setShowJoinModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setShowJoinModal(false)}>×</button>
+            <button className="modal-close" onClick={() => setShowJoinModal(false)}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
             <JoinLearning
               teacherId={profile.user.id}
               teacherUsername={profile.user.username}

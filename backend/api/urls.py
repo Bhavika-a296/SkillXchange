@@ -7,6 +7,7 @@ from . import resume_views
 from . import message_views
 from . import learning_views
 from . import rating_views
+from . import quiz_views
 
 router = DefaultRouter()
 router.register(r'skills', views.SkillViewSet, basename='skills')
@@ -19,6 +20,8 @@ urlpatterns = [
     path('profile/<int:pk>/', views.UserProfileDetailView.as_view(), name='profile-detail'),
     path('auth/register/', auth_views.register_user, name='register'),
     path('auth/login/', auth_views.login_user, name='login'),
+    path('auth/logout/', auth_views.logout_user, name='logout'),
+    path('auth/delete-account/', auth_views.delete_account, name='delete_account'),
     path('auth/check-username/<str:username>/', auth_views.check_username, name='check_username'),
     path('upload_resume/', resume_views.ResumeUploadView.as_view(), name='upload_resume'),
     path('resume/current/', resume_views.ResumeUploadView.as_view(), name='current_resume'),
@@ -50,6 +53,7 @@ urlpatterns = [
     path('learning/skills-taught/<str:username>/', learning_views.get_skills_taught, name='skills_taught_user'),
     path('learning/badges/', learning_views.get_user_badges, name='user_badges'),
     path('learning/badges/<str:username>/', learning_views.get_user_badges, name='user_badges_by_username'),
+    path('learning/leaderboard/', learning_views.get_leaderboard, name='learning_leaderboard'),
     
     # Rating endpoints
     path('learning/rate/<int:session_id>/', rating_views.submit_rating, name='submit_rating'),
@@ -57,4 +61,17 @@ urlpatterns = [
     path('learning/ratings/user/', rating_views.get_user_ratings, name='user_ratings'),
     path('learning/ratings/user/<str:username>/', rating_views.get_user_ratings, name='user_ratings_by_username'),
     path('learning/can-rate/<int:session_id>/', rating_views.check_can_rate, name='check_can_rate'),
+    
+    # Quiz & Teacher Verification endpoints
+    path('quiz/check-ollama/', quiz_views.check_ollama_status, name='check_ollama'),
+    path('quiz/generate-quiz/', quiz_views.generate_skill_quiz, name='generate_quiz'),
+    path('quiz/get-quiz/', quiz_views.get_skill_quiz, name='get_quiz'),
+    path('quiz/submit-quiz/', quiz_views.submit_quiz, name='submit_quiz'),
+    path('quiz/teacher-verifications/', quiz_views.get_teacher_verifications, name='teacher_verifications'),
+    path('quiz/teacher-verifications/<str:username>/', quiz_views.get_user_verifications, name='user_verifications'),
+    
+    # Quiz & Learner Skill Verification endpoints
+    path('quiz/submit-learner-quiz/', quiz_views.submit_learner_quiz, name='submit_learner_quiz'),
+    path('quiz/learner-verifications/', quiz_views.get_learner_verifications, name='learner_verifications'),
+    path('quiz/learner-verifications/<str:username>/', quiz_views.get_user_learned_skills, name='user_learned_skills'),
 ]

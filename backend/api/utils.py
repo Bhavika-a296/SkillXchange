@@ -77,15 +77,17 @@ def ensure_nltk_data():
 
     def extract_skills_from_text(text: str) -> List[str]:
         """Extract skills from text using regex and a predefined skills list."""
-        from .skills_data import COMMON_SKILLS
+        from .skills_data import get_skill_vocabulary
         import re
+
+        skill_vocabulary = get_skill_vocabulary()
     
         # Clean and normalize text
         text = text.lower()
         found_skills = set()
     
         # First, look for exact matches of multi-word skills
-        for skill in COMMON_SKILLS:
+        for skill in skill_vocabulary:
             if ' ' in skill:
                 # Look for the skill with word boundaries
                 pattern = r'\b' + re.escape(skill) + r'\b'
@@ -98,7 +100,7 @@ def ensure_nltk_data():
     
         # Check single words against skills list
         for word in words:
-            if word in COMMON_SKILLS:
+            if word in skill_vocabulary:
                 found_skills.add(word)
     
         # Look for technical patterns
@@ -109,7 +111,7 @@ def ensure_nltk_data():
                 if (any(char.isdigit() for char in word) or  # Contains numbers (e.g., sql2019)
                     word.endswith(('js', 'db', 'ml', 'ai', 'ui', 'ux', 'py')) or  # Common technical suffixes
                     word.startswith(('py', 'js', 'ng', 'rx'))):  # Common technical prefixes
-                    if word in COMMON_SKILLS:
+                    if word in skill_vocabulary:
                         found_skills.add(word)
     
         # Look for consecutive words that might form skills
@@ -118,7 +120,7 @@ def ensure_nltk_data():
             two_words = ' ' + words[i] + ' ' + words[i + 1] + ' '
             if two_words in text_with_boundaries:
                 compound = (words[i] + ' ' + words[i + 1]).lower()
-                if compound in COMMON_SKILLS:
+                if compound in skill_vocabulary:
                     found_skills.add(compound)
     
         return sorted(list(found_skills))
@@ -164,6 +166,25 @@ def ensure_nltk_data():
         Returns list of (user_id, similarity_score) tuples.
         """
         desired_embedding = get_skill_embedding(desired_skill)
+        desired_text = (desired_skill or '').strip().lower()
+
+        def lexical_score(skill_name: str) -> float:
+            candidate = (skill_name or '').strip().lower()
+            if not desired_text or not candidate:
+                return 0.0
+            if candidate == desired_text:
+                return 1.0
+            if desired_text in candidate or candidate in desired_text:
+                return 0.85
+            desired_parts = set(desired_text.replace('/', ' ').replace('-', ' ').split())
+            candidate_parts = set(candidate.replace('/', ' ').replace('-', ' ').split())
+            if desired_parts and candidate_parts:
+                overlap = len(desired_parts & candidate_parts)
+                if overlap:
+                    return overlap / max(len(desired_parts), len(candidate_parts))
+            if candidate.startswith(desired_text) or desired_text.startswith(candidate):
+                return 0.75
+            return 0.0
     
         matches = []
         for user_id, skill_name, embedding in all_skills:
@@ -172,12 +193,8 @@ def ensure_nltk_data():
             if embedding and desired_embedding:
                 similarity = calculate_skill_similarity(embedding, desired_embedding)
             else:
-                # Fallback: give a high score for exact name matches (case-insensitive)
-                try:
-                    if skill_name and skill_name.lower() == desired_skill.lower():
-                        similarity = 1.0
-                except Exception:
-                    similarity = 0.0
+                # Fallback: use lexical similarity when embeddings are unavailable
+                similarity = lexical_score(skill_name)
 
             matches.append((user_id, similarity))
 

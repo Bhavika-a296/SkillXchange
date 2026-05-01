@@ -51,7 +51,7 @@ const JoinLearning = ({ teacherId, teacherUsername, skillName, onSuccess }) => {
       // Check if it's a pending request (new flow) or accepted (old sessions)
       if (response.data.learning_session?.status === 'pending') {
         // Request sent successfully, show success message
-        alert(`✓ ${response.data.message}\n\nPoints will be deducted when ${teacherUsername} accepts your request.`);
+        alert(`${response.data.message}\n\nPoints will be deducted when ${teacherUsername} accepts your request.`);
         
         // Notify parent component
         if (onSuccess) {
@@ -92,7 +92,13 @@ const JoinLearning = ({ teacherId, teacherUsername, skillName, onSuccess }) => {
           <h3>Start Learning</h3>
           {userPoints && (
             <div className="user-points-display">
-              <span className="points-icon">💰</span>
+              <span className="points-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="8" />
+                  <path d="M9.5 12h5" />
+                  <path d="M12 9.5v5" />
+                </svg>
+              </span>
               <span className="points-value">{userPoints.balance}</span>
               <span className="points-label">points</span>
             </div>
@@ -129,7 +135,14 @@ const JoinLearning = ({ teacherId, teacherUsername, skillName, onSuccess }) => {
 
         {userPoints && userPoints.balance < joinCost && (
           <div className="insufficient-points-warning">
-            ⚠️ Insufficient points. You need {joinCost - userPoints.balance} more points.
+            <span className="warning-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3 2.7 19h18.6L12 3Z" />
+                <path d="M12 9v5" />
+                <circle cx="12" cy="17" r="1" />
+              </svg>
+            </span>
+            Insufficient points. You need {joinCost - userPoints.balance} more points.
           </div>
         )}
 
@@ -143,7 +156,14 @@ const JoinLearning = ({ teacherId, teacherUsername, skillName, onSuccess }) => {
 
         <div className="join-learning-note">
           <small>
-            💡 The teacher will receive your request. Points ({joinCost}) will be deducted when they accept.
+            <span className="note-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 18h6" />
+                <path d="M10 22h4" />
+                <path d="M12 2a7 7 0 0 0-4 12.8V17h8v-2.2A7 7 0 0 0 12 2Z" />
+              </svg>
+            </span>
+            The teacher will receive your request. Points ({joinCost}) will be deducted when they accept.
           </small>
         </div>
       </div>

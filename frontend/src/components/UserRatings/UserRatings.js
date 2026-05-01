@@ -48,7 +48,9 @@ const UserRatings = ({ username }) => {
       <div className="stars-display">
         {[1, 2, 3, 4, 5].map((star) => (
           <span key={star} className={`star ${star <= rating ? 'filled' : ''}`}>
-            ★
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="m12 2.5 2.8 5.8 6.4.9-4.6 4.5 1.1 6.3L12 17l-5.7 3 1.1-6.3L2.8 9.2l6.4-.9L12 2.5Z" />
+            </svg>
           </span>
         ))}
       </div>
@@ -60,7 +62,7 @@ const UserRatings = ({ username }) => {
       <div className="rating-header">
         <div className="rater-info">
           <strong>{rating.rater.username}</strong>
-          <span className="skill-name">• {rating.learning_session.skill_name}</span>
+          <span className="skill-name">- {rating.learning_session.skill_name}</span>
         </div>
         {renderStars(rating.rating)}
       </div>

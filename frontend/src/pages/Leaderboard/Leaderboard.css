@@ -1,0 +1,59 @@
+﻿.leaderboard-container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.leaderboard-subtitle {
+  color: #4b5563;
+  margin-bottom: 1rem;
+}
+
+.my-rank-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.leaderboard-table-wrapper {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.leaderboard-table thead {
+  background: #f8fafc;
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  text-align: left;
+}
+
+.leaderboard-table tbody tr:hover {
+  background: #f8fbff;
+}
+
+.score-cell {
+  font-weight: 700;
+  color: #df88b0;
+}
+
+@media (max-width: 768px) {
+  .leaderboard-table th,
+  .leaderboard-table td {
+    padding: 0.7rem 0.6rem;
+    font-size: 0.88rem;
+  }
+}
+
+

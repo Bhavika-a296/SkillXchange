@@ -40,7 +40,12 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await authApi.logout();
+    } catch (err) {
+      // Even if API logout fails, clear local session to avoid trapping user.
+    }
     localStorage.removeItem('token');
     setUser(null);
   };

@@ -4,7 +4,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.contrib.auth.models import User
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Count, Sum
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from datetime import timedelta
 from .models import (
@@ -213,10 +214,10 @@ def end_learning(request, session_id):
             status=status.HTTP_404_NOT_FOUND
         )
     
-    # Check if user is part of the session
-    if request.user not in [learning_session.learner, learning_session.teacher]:
+    # Check if user is the teacher (only teacher can complete the session)
+    if request.user != learning_session.teacher:
         return Response(
-            {'error': 'You are not part of this learning session'},
+            {'error': 'Only the teacher can complete this learning session'},
             status=status.HTTP_403_FORBIDDEN
         )
     
@@ -565,3 +566,55 @@ def get_user_badges(request, username=None):
         'badges': serializer.data,
         'total_badges': badges.count()
     }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_leaderboard(request):
+    """Return leaderboard ranking using platform minutes and skills-earned formula."""
+    # Time-based formula weights
+    time_weight = 2  # minutes spent
+    skills_weight = 10  # skills earned
+
+    users = User.objects.filter(is_active=True, is_superuser=False).annotate(
+        total_seconds_spent=Coalesce(Sum('activity_sessions__duration_seconds'), 0),
+        skills_earned=Count(
+            'learning_sessions_as_learner__skill_name',
+            filter=Q(learning_sessions_as_learner__status='completed'),
+            distinct=True,
+        ),
+    )
+
+    rows = []
+    for user in users:
+        minutes_spent = round((user.total_seconds_spent or 0) / 60, 2)
+        score = (minutes_spent * time_weight) + (user.skills_earned * skills_weight)
+        rows.append({
+            'user_id': user.id,
+            'username': user.username,
+            'minutes_spent': minutes_spent,
+            'skills_earned': user.skills_earned,
+            'score': score,
+        })
+
+    rows.sort(
+        key=lambda r: (r['score'], r['skills_earned'], r['minutes_spent'], r['username']),
+        reverse=True,
+    )
+
+    for index, row in enumerate(rows, start=1):
+        row['rank'] = index
+
+    my_rank = next((r['rank'] for r in rows if r['user_id'] == request.user.id), None)
+
+    return Response(
+        {
+            'weights': {
+                'minutes_spent': time_weight,
+                'skills_earned': skills_weight,
+            },
+            'my_rank': my_rank,
+            'leaderboard': rows,
+        },
+        status=status.HTTP_200_OK,
+    )

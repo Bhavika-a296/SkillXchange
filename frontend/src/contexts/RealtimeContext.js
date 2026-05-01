@@ -10,39 +10,61 @@ export const RealtimeProvider = ({ children }) => {
   const { user } = useAuth();
 
   useEffect(() => {
+    let isCancelled = false;
+    let localClient = null;
+
     const setupAbly = async () => {
-      if (user) {
-        try {
-          // Get token from backend
-          const response = await api.get('realtime/token/');
-          const { token } = response.data;
+      if (!user) {
+        if (ably) {
+          ably.close();
+          setAbly(null);
+        }
+        return;
+      }
 
-          // Initialize Ably with the token
-          const ablyClient = new Realtime({ token });
-          setAbly(ablyClient);
+      try {
+        // Get token from backend
+        const response = await api.get('realtime/token/');
+        if (isCancelled) {
+          return;
+        }
+        const { token } = response.data;
 
-          // Handle connection state changes
-          ablyClient.connection.on('connected', () => {
-            console.log('Connected to Ably');
-          });
+        // Close any existing client before replacing it
+        setAbly((previousClient) => {
+          if (previousClient) {
+            previousClient.close();
+          }
+          return previousClient;
+        });
 
-          ablyClient.connection.on('failed', () => {
-            console.error('Failed to connect to Ably');
-          });
+        // Initialize Ably with the token
+        localClient = new Realtime({ token });
+        setAbly(localClient);
 
-          // Cleanup on unmount
-          return () => {
-            if (ablyClient && ablyClient.connection.state === 'connected') {
-              ablyClient.close();
-            }
-          };
-        } catch (error) {
+        // Handle connection state changes
+        localClient.connection.on('connected', () => {
+          console.log('Connected to Ably');
+        });
+
+        localClient.connection.on('failed', () => {
+          console.error('Failed to connect to Ably');
+        });
+      } catch (error) {
+        if (!isCancelled) {
           console.error('Error setting up Ably:', error);
         }
       }
     };
 
     setupAbly();
+
+    return () => {
+      isCancelled = true;
+      if (localClient) {
+        localClient.close();
+      }
+    };
   }, [user]);
 
   const getChannelName = (user1Id, user2Id) => {

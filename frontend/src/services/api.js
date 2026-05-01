@@ -31,9 +31,11 @@ api.interceptors.response.use(
 
 export const authApi = {
     login: (credentials) => api.post('/auth/login/', credentials),
+    logout: () => api.post('/auth/logout/'),
     register: (userData) => api.post('/auth/register/', userData),
     verify: () => api.get('/profile/'),  // Use profile endpoint to verify token
     checkUsername: (username) => api.get(`/auth/check-username/${username}/`),
+    deleteAccount: () => api.delete('/auth/delete-account/'),
 };
 
 export const profileApi = {

@@ -1,35 +1,16 @@
-.skills-section {
+﻿.skills-section {
   margin: 30px 0;
 }
 
-.skills-tabs {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-  border-bottom: 2px solid #e0e0e0;
+.skills-header {
+  margin-bottom: 14px;
 }
 
-.tab-button {
-  padding: 12px 24px;
-  border: none;
-  background: none;
-  font-size: 16px;
-  font-weight: 600;
-  color: #666;
-  cursor: pointer;
-  border-bottom: 3px solid transparent;
-  transition: all 0.3s ease;
-  position: relative;
-  bottom: -2px;
-}
-
-.tab-button:hover {
-  color: #4a90e2;
-}
-
-.tab-button.active {
-  color: #4a90e2;
-  border-bottom-color: #4a90e2;
+.skills-header h4 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
 }
 
 .skills-content {
@@ -97,7 +78,17 @@
 }
 
 .skill-card-badge {
-  font-size: 18px;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.skill-card-badge svg {
+  width: 20px;
+  height: 20px;
+  display: block;
 }
 
 .skill-card-body {
@@ -113,7 +104,7 @@
 }
 
 .user-link {
-  color: #4a90e2;
+  color: #f39ac1;
   text-decoration: none;
   font-weight: 600;
   margin-left: 5px;
@@ -121,7 +112,7 @@
 }
 
 .user-link:hover {
-  color: #357abd;
+  color: #d97ea8;
   text-decoration: underline;
 }
 
@@ -165,11 +156,6 @@
     grid-template-columns: 1fr;
   }
 
-  .tab-button {
-    padding: 10px 16px;
-    font-size: 14px;
-  }
-
   .skill-card {
     padding: 16px;
   }
@@ -178,3 +164,5 @@
     font-size: 16px;
   }
 }
+
+

@@ -3,12 +3,13 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
+from .models import TeacherVerification, LearnerSkillVerification
 from django.shortcuts import get_object_or_404
 import PyPDF2.errors
 import nltk
 from django.db import models
 from django.db.models import Q
-from .models import UserProfile, Skill, Resume, SkillMatch
+from .models import UserProfile, Skill, Resume, SkillMatch, TeacherVerification, LearnerSkillVerification
 from .models import Connection, Message
 from .serializers import (
     UserProfileSerializer,
@@ -307,17 +308,43 @@ class SkillMatchView(APIView):
         matches = find_matching_users_for_skills(desired_skills, all_skills)
         print(f"[SkillMatch] Computed {len(matches)} matches")
 
+        # Only expose meaningful matches to the frontend.
+        # This prevents unrelated searches from showing every profile with a 0 score.
+        filtered_matches = [m for m in matches if m.get('match_score', 0) > 0.3]
+        print(f"[SkillMatch] {len(filtered_matches)} matches passed the response threshold")
+
         # Enrich matches with provider username
-        user_ids = [m['user_id'] for m in matches]
+        user_ids = [m['user_id'] for m in filtered_matches]
         from django.contrib.auth.models import User
         from django.db import transaction
         import time
         users = User.objects.filter(id__in=user_ids).values('id', 'username')
         user_map = {u['id']: u['username'] for u in users}
 
+        def skill_matches_query(skill_name, desired_skill):
+            candidate = (skill_name or '').strip().lower()
+            desired_text = (desired_skill or '').strip().lower()
+            if not candidate or not desired_text:
+                return False
+            return desired_text in candidate or candidate in desired_text
+
+        verified_skill_map = {}
+        if user_ids:
+            for row in TeacherVerification.objects.filter(
+                teacher_id__in=user_ids,
+                is_verified=True,
+            ).values('teacher_id', 'skill_name'):
+                verified_skill_map.setdefault(row['teacher_id'], set()).add((row['skill_name'] or '').strip())
+
+            for row in LearnerSkillVerification.objects.filter(
+                learner_id__in=user_ids,
+                is_verified=True,
+            ).values('learner_id', 'skill_name'):
+                verified_skill_map.setdefault(row['learner_id'], set()).add((row['skill_name'] or '').strip())
+
         response_matches = []
         saved_count = 0
-        
+
         # Use atomic transaction to prevent database locks
         max_retries = 3
         retry_delay = 0.1  # Start with 100ms delay
@@ -325,7 +352,7 @@ class SkillMatchView(APIView):
         for retry in range(max_retries):
             try:
                 with transaction.atomic():
-                    for m in matches:
+                    for m in filtered_matches:
                         username = user_map.get(m['user_id'], 'Unknown')
                         print(f"[SkillMatch] User {m['user_id']} ({username}): score={m['match_score']:.4f}")
                         
@@ -348,8 +375,13 @@ class SkillMatchView(APIView):
                             'user_id': m['user_id'],
                             'username': username,
                             'match_score': m['match_score'],
-                            'match_percentage': int(m['match_score'] * 100),  # Add percentage for frontend
-                            'matching_skills': m.get('matching_skills', [])
+                            'match_percentage': int(m['match_score'] * 100),
+                            'matching_skills': m.get('matching_skills', []),
+                            'verified_skills': sorted(list(verified_skill_map.get(m['user_id'], set()))),
+                            'verified_matching_skills': sorted([
+                                skill for skill in verified_skill_map.get(m['user_id'], set())
+                                if any(skill_matches_query(skill, desired_skill) for desired_skill in desired_skills)
+                            ]),
                         })
                 
                 # Transaction successful, break out of retry loop
@@ -374,6 +406,14 @@ class SkillMatchView(APIView):
                     # Re-raise non-lock errors
                     raise
         
+        response_matches.sort(
+            key=lambda r: (
+                not bool(r.get('verified_matching_skills')),
+                -r.get('match_score', 0),
+                r.get('username', '').lower(),
+            )
+        )
+
         return Response({'matches': response_matches})
 
 

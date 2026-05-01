@@ -3,12 +3,14 @@ import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import './LearningSession.css';
 import PointAnimation from '../PointAnimation/PointAnimation';
+import LearnerQuiz from '../LearnerQuiz/LearnerQuiz';
 
 const LearningSession = ({ session, onUpdate }) => {
   const [showAnimation, setShowAnimation] = useState(false);
   const [animationPoints, setAnimationPoints] = useState(0);
   const [loading, setLoading] = useState(false);
   const [canRate, setCanRate] = useState(false);
+  const [showQuiz, setShowQuiz] = useState(false);
   const { user: currentUser } = useAuth();
 
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
@@ -160,15 +162,17 @@ const LearningSession = ({ session, onUpdate }) => {
                 </div>
               </div>
 
-              <div className="session-actions">
-                <button
-                  className="btn-end-learning"
-                  onClick={handleEndLearning}
-                  disabled={loading}
-                >
-                  {loading ? 'Completing...' : 'Complete Learning'}
-                </button>
-              </div>
+              {!isLearner && (
+                <div className="session-actions">
+                  <button
+                    className="btn-end-learning"
+                    onClick={handleEndLearning}
+                    disabled={loading}
+                  >
+                    {loading ? 'Completing...' : 'Complete Learning'}
+                  </button>
+                </div>
+              )}
             </>
           )}
 
@@ -182,14 +186,24 @@ const LearningSession = ({ session, onUpdate }) => {
                   Points earned: {isLearner ? session.points_awarded_learner : session.points_awarded_teacher}
                 </p>
               )}
-              {canRate && (
-                <button 
-                  className="btn-rate"
-                  onClick={() => window.location.href = `/rate-session/${session.id}`}
-                >
-                  Rate & Give Feedback
-                </button>
-              )}
+              <div className="completion-actions">
+                {isLearner && session.can_take_quiz && !showQuiz && (
+                  <button 
+                    className="btn-take-quiz"
+                    onClick={() => setShowQuiz(true)}
+                  >
+                    Take Quiz - Verify Skill
+                  </button>
+                )}
+                {canRate && !showQuiz && (
+                  <button 
+                    className="btn-rate"
+                    onClick={() => window.location.href = `/rate-session/${session.id}`}
+                  >
+                    Rate & Give Feedback
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -208,6 +222,30 @@ const LearningSession = ({ session, onUpdate }) => {
           type="earn"
           onComplete={() => setShowAnimation(false)}
         />
+      )}
+
+      {showQuiz && (
+        <div className="quiz-modal-overlay">
+          <div className="quiz-modal-content">
+            <button 
+              className="close-quiz-modal" 
+              onClick={() => setShowQuiz(false)}
+            >
+              ✕
+            </button>
+            <LearnerQuiz 
+              sessionId={session.id} 
+              skillName={session.skill_name}
+              onQuizComplete={(result) => {
+                if (result.is_verified) {
+                  setShowQuiz(false);
+                  // Reload page to update profile
+                  setTimeout(() => window.location.reload(), 2000);
+                }
+              }}
+            />
+          </div>
+        </div>
       )}
     </>
   );

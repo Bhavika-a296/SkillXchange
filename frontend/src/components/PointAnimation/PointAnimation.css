@@ -9,7 +9,7 @@
 }
 
 .point-animation-inner {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2f7f73 0%, #5ea89c 100%);
   padding: 30px 50px;
   border-radius: 20px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
@@ -25,7 +25,7 @@
 }
 
 .point-animation.positive .point-animation-inner {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background: linear-gradient(135deg, #6f8f8a 0%, #9bc4bc 100%);
 }
 
 .point-value {
@@ -134,3 +134,5 @@
     font-size: 14px;
   }
 }
+
+

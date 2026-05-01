@@ -1,13 +1,26 @@
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.utils import timezone
 from .auth_serializers import RegisterSerializer, LoginSerializer
-from .models import UserProfile
+from .models import UserProfile, UserActivitySession, DailyLogin
+
+
+def _close_open_activity_sessions(user, end_time):
+    """Close any previously open sessions for a user."""
+    max_session_seconds = 12 * 3600
+    open_sessions = UserActivitySession.objects.filter(user=user, logout_time__isnull=True)
+    for session in open_sessions:
+        duration = max(0, int((end_time - session.login_time).total_seconds()))
+        duration = min(duration, max_session_seconds)
+        session.logout_time = end_time
+        session.duration_seconds = duration
+        session.save(update_fields=['logout_time', 'duration_seconds'])
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -94,6 +107,15 @@ def login_user(request):
         
         if user is not None:
             token, _ = Token.objects.get_or_create(user=user)
+
+            # Start a fresh tracked activity session at login.
+            now = timezone.now()
+            _close_open_activity_sessions(user, now)
+            UserActivitySession.objects.create(user=user, login_time=now)
+            
+            # Create daily login record for days active tracking
+            DailyLogin.objects.get_or_create(user=user, login_date=now.date())
+
             return Response({
                 'status': 'success',
                 'token': token.key,
@@ -113,3 +135,39 @@ def login_user(request):
             'status': 'error',
             'message': 'An error occurred during login'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_account(request):
+    """Delete the currently authenticated user's account permanently."""
+    try:
+        username = request.user.username
+        request.user.delete()
+        return Response({
+            'status': 'success',
+            'message': f'Account {username} deleted successfully'
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(f"Delete account error: {str(e)}")
+        return Response({
+            'status': 'error',
+            'message': 'Could not delete account. Please try again.'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logout_user(request):
+    """Logout current user and close tracked activity session."""
+    try:
+        now = timezone.now()
+        _close_open_activity_sessions(request.user, now)
+
+        # Invalidate token for current session.
+        Token.objects.filter(user=request.user).delete()
+
+        return Response({'status': 'success', 'message': 'Logged out successfully'}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(f"Logout error: {str(e)}")
+        return Response({'status': 'error', 'message': 'Logout failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

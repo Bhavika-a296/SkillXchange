@@ -19,6 +19,11 @@ const SkillMatch = ({ skills }) => {
     try {
       const response = await skillsApi.findMatches(skills);
       // backend returns { matches: [...] }
+      console.log('[SkillMatch] API Response:', response.data);
+      console.log('[SkillMatch] Matches:', response.data.matches);
+      if (response.data.matches && response.data.matches.length > 0) {
+        console.log('[SkillMatch] First match:', response.data.matches[0]);
+      }
       setMatches(response.data.matches || []);
     } catch (err) {
       setError(err.response?.data?.error || 'An error occurred while finding matches');

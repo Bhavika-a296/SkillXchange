@@ -17,6 +17,8 @@ from .serializers import (
 from .utils_safe import (
     extract_text_from_pdf,
     extract_skills_from_text,
+    normalize_skill_name,
+    is_valid_skill_name,
     get_skill_embedding,
     find_matching_users
 )
@@ -100,6 +102,12 @@ class ResumeUploadView(APIView):
                 
                 # Extract skills from text
                 skills = extract_skills_from_text(pdf_text)
+
+                # Clean up clearly invalid skills from earlier noisy extraction runs.
+                for existing_skill in Skill.objects.filter(user=request.user):
+                    existing_name = normalize_skill_name(existing_skill.name)
+                    if not is_valid_skill_name(existing_name):
+                        existing_skill.delete()
                 
                 if not skills:
                     resume.file.delete()
@@ -111,13 +119,30 @@ class ResumeUploadView(APIView):
                 # Save extracted skills, avoiding duplicates
                 saved_skills = []
                 for skill_name in skills:
-                    skill, created = Skill.objects.get_or_create(
+                    normalized_skill = normalize_skill_name(skill_name)
+                    if not normalized_skill or not is_valid_skill_name(normalized_skill):
+                        continue
+
+                    embedding = get_skill_embedding(normalized_skill)
+                    skill = Skill.objects.filter(
                         user=request.user,
-                        name=skill_name,
-                        defaults={
-                            'embedding': get_skill_embedding(skill_name)
-                        }
-                    )
+                        name__iexact=normalized_skill
+                    ).first()
+
+                    if skill is None:
+                        skill = Skill.objects.create(
+                            user=request.user,
+                            name=normalized_skill,
+                            embedding=embedding
+                        )
+                        created = True
+                    else:
+                        created = False
+                        # Backfill embedding if it is missing.
+                        if (not skill.embedding) and embedding:
+                            skill.embedding = embedding
+                            skill.save(update_fields=['embedding', 'updated_at'])
+
                     saved_skills.append({
                         'name': skill.name,
                         'id': skill.id,

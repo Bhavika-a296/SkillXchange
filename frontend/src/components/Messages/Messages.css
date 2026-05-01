@@ -1,4 +1,4 @@
-.messages-container {
+﻿.messages-container {
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -29,9 +29,9 @@
 .start-meet-button {
     margin-left: 1rem;
     padding: 0.6rem 1.2rem;
-    background: #3b82f6;
+    background: #f39ac1;
     color: white;
-    border: 2px solid #3b82f6;
+    border: 2px solid #f39ac1;
     border-radius: 6px;
     cursor: pointer;
     font-weight: 600;
@@ -39,8 +39,8 @@
 }
 
 .start-meet-button:hover {
-    background: #2563eb;
-    border-color: #2563eb;
+    background: #e88fb7;
+    border-color: #e88fb7;
     transform: translateY(-2px);
 }
 
@@ -93,7 +93,7 @@
 
 .message.sent {
     align-self: flex-end;
-    background: #3b82f6;
+    background: #f39ac1;
     color: white;
     border-bottom-right-radius: 4px;
 }
@@ -138,14 +138,14 @@
 }
 
 .message-input:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    border-color: #f39ac1;
+    box-shadow: 0 0 0 4px rgba(243, 154, 193, 0.1);
     background: white;
 }
 
 .send-button {
     padding: 1rem 2rem;
-    background: #3b82f6;
+    background: #f39ac1;
     color: white;
     border: none;
     border-radius: 6px;
@@ -156,9 +156,9 @@
 }
 
 .send-button:hover {
-    background: #2563eb;
+    background: #e88fb7;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 12px rgba(243, 154, 193, 0.22);
 }
 
 .send-button:active {
@@ -191,3 +191,4 @@
     background-color: #084298;
     color: #ffffff;
 }
+

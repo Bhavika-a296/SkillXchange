@@ -1,7 +1,12 @@
 import PyPDF2
 import nltk
 import json
+import os
 from typing import List, Tuple
+
+# Prevent PyTorch meta tensor issues with newer versions
+os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
+os.environ['TRANSFORMERS_OFFLINE'] = '0'
 
 # Heavy ML libraries are imported lazily inside functions to avoid import-time
 # failures when running management commands (migrate, collectstatic, etc.).
@@ -40,7 +45,7 @@ print("[SkillMatch] ============================================")
 _model = None
 _model_load_failed = False
 _model_load_attempts = 0
-_max_load_attempts = 3  # Limit attempts to prevent infinite loops
+_max_load_attempts = 10  # Increased to allow retries after server restart
 
 def get_model(force_reload=False):
     """Lazily load the SentenceTransformer model. If the package isn't
@@ -87,26 +92,18 @@ def get_model(force_reload=False):
             except:
                 pass
             
-            # Force CPU device BEFORE loading model
-            try:
-                torch.set_default_device('cpu')
-                torch.set_default_dtype(torch.float32)
-            except Exception as e:
-                print(f"[SkillMatch] Warning: Could not set default device: {e}")
-            
             # Disable meta device to prevent PyTorch 2.7+ meta tensor errors
             os.environ['PYTORCH_JIT'] = '0'
             os.environ['TOKENIZERS_PARALLELISM'] = 'false'
             
-            # Load model with explicit device map to prevent meta tensor usage
+            # Load model
             print(f"[SkillMatch] Loading SentenceTransformer model...")
             
-            # CRITICAL FIX for PyTorch 2.7+ meta tensor bug:
-            # Load model with device='cpu' explicitly to avoid meta tensor initialization
-            _model = SentenceTransformer('paraphrase-MiniLM-L6-v2', device='cpu', trust_remote_code=True)
+            # Using PyTorch 2.3.1 which doesn't have meta tensor issues
+            _model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
             
-            # The model is already on CPU by default, no need to move it
-            print(f"[SkillMatch] Model loaded on default device")
+            # Model loads on CPU by default, no need to move it
+            print(f"[SkillMatch] Model loaded successfully on CPU")
             
             # Test the model with a simple encoding to ensure it works
             test_result = _model.encode("test", show_progress_bar=False)
@@ -135,22 +132,83 @@ def extract_text_from_pdf(pdf_file) -> str:
     return text
 
 
+def normalize_skill_name(skill_name: str) -> str:
+    """Normalize skill names before storing/matching."""
+    if not skill_name:
+        return ""
+    return " ".join(skill_name.strip().lower().split())
+
+
+def is_valid_skill_name(candidate: str) -> bool:
+    """Return True only for plausible skill names."""
+    import re
+
+    candidate = normalize_skill_name(candidate)
+    if not candidate:
+        return False
+
+    stop_words = {
+        'and', 'or', 'with', 'for', 'the', 'a', 'an', 'to', 'of', 'in', 'on',
+        'at', 'by', 'from', 'as', 'is', 'are', 'was', 'were', 'be', 'this',
+        'that', 'it', 'i', 'you', 'we', 'they', 'he', 'she', 'my', 'our',
+        'your', 'their', 'experience', 'project', 'projects', 'resume',
+        'summary', 'education', 'college', 'university', 'certificate',
+        'certification', 'internship', 'work', 'skills', 'technical',
+        'board', 'pursuing', 'completed', 'analyzed', 'activities', 'training'
+    }
+    if candidate in stop_words:
+        return False
+
+    if '@' in candidate or 'http' in candidate or '.com' in candidate:
+        return False
+
+    months = {
+        'jan', 'january', 'feb', 'february', 'mar', 'march', 'apr', 'april',
+        'may', 'jun', 'june', 'jul', 'july', 'aug', 'august', 'sep',
+        'september', 'oct', 'october', 'nov', 'november', 'dec', 'december'
+    }
+    if any(m in candidate for m in months):
+        return False
+
+    if re.search(r'\b(19|20)\d{2}\b', candidate):
+        return False
+    if re.fullmatch(r'\d+(?:[./-]\d+)*', candidate):
+        return False
+
+    # reject username-like tokens (letters followed by long digit suffix)
+    if re.fullmatch(r'[a-z]+\d{3,}', candidate):
+        return False
+
+    if len(candidate) < 2 or len(candidate) > 30:
+        return False
+
+    words_in_candidate = candidate.split()
+    if len(words_in_candidate) > 3:
+        return False
+
+    return True
+
+
 def extract_skills_from_text(text: str) -> List[str]:
     """Extract skills from text using regex and a predefined skills list."""
-    from .skills_data import COMMON_SKILLS
+    from .skills_data import get_skill_vocabulary
     import re
+
+    skill_vocabulary = get_skill_vocabulary()
     
     # Clean and normalize text
     text = text.lower()
     found_skills = set()
     
     # First, look for exact matches of multi-word skills
-    for skill in COMMON_SKILLS:
+    for skill in skill_vocabulary:
         if ' ' in skill:
             # Look for the skill with word boundaries
             pattern = r'\b' + re.escape(skill) + r'\b'
             if re.search(pattern, text):
-                found_skills.add(skill)
+                normalized_skill = normalize_skill_name(skill)
+                if is_valid_skill_name(normalized_skill):
+                    found_skills.add(normalized_skill)
     
     # Split text into words using regex
     # This will match any sequence of word characters (letters, numbers, underscores)
@@ -158,8 +216,10 @@ def extract_skills_from_text(text: str) -> List[str]:
     
     # Check single words against skills list
     for word in words:
-        if word in COMMON_SKILLS:
-            found_skills.add(word)
+        if word in skill_vocabulary:
+            normalized_word = normalize_skill_name(word)
+            if is_valid_skill_name(normalized_word):
+                found_skills.add(normalized_word)
     
     # Look for technical patterns
     for word in words:
@@ -169,8 +229,10 @@ def extract_skills_from_text(text: str) -> List[str]:
             if (any(char.isdigit() for char in word) or  # Contains numbers (e.g., sql2019)
                 word.endswith(('js', 'db', 'ml', 'ai', 'ui', 'ux', 'py')) or  # Common technical suffixes
                 word.startswith(('py', 'js', 'ng', 'rx'))):  # Common technical prefixes
-                if word in COMMON_SKILLS:
-                    found_skills.add(word)
+                if word in skill_vocabulary:
+                    normalized_word = normalize_skill_name(word)
+                    if is_valid_skill_name(normalized_word):
+                        found_skills.add(normalized_word)
     
     # Look for consecutive words that might form skills
     text_with_boundaries = ' ' + text + ' '
@@ -178,8 +240,70 @@ def extract_skills_from_text(text: str) -> List[str]:
         two_words = ' ' + words[i] + ' ' + words[i + 1] + ' '
         if two_words in text_with_boundaries:
             compound = (words[i] + ' ' + words[i + 1]).lower()
-            if compound in COMMON_SKILLS:
-                found_skills.add(compound)
+            if compound in skill_vocabulary:
+                normalized_compound = normalize_skill_name(compound)
+                if is_valid_skill_name(normalized_compound):
+                    found_skills.add(normalized_compound)
+
+    # Fallback extraction: conservative parsing of likely skill sections only.
+    # Keep this strict to avoid storing resume noise as skills.
+    dotted_whitelist = {
+        'node.js', 'next.js', 'vue.js', 'react.js', 'express.js'
+    }
+
+    def is_valid_fallback_skill(candidate: str) -> bool:
+        if not is_valid_skill_name(candidate):
+            return False
+
+        # If dotted token is unknown and contains multiple words/chunks, reject it.
+        if '.' in candidate and candidate not in dotted_whitelist and candidate not in skill_vocabulary:
+            return False
+
+        # Reject very long hyphenated phrase fragments.
+        if candidate.count('-') > 2 and candidate not in skill_vocabulary:
+            return False
+
+        if candidate not in skill_vocabulary:
+            # For unknown skills, require a technical-looking token.
+            technical_hint = (
+                any(ch in candidate for ch in ('+', '#', '/', '-')) or
+                any(ch.isdigit() for ch in candidate) or
+                candidate.endswith(('js', 'sql', 'ml', 'ai', 'api', 'db', 'devops'))
+            )
+            if not technical_hint:
+                return False
+
+        return True
+
+    # Prefer parsing around lines that likely contain skill lists.
+    likely_skill_chunks = []
+    normalized_text = text.replace('\r', '\n')
+    for line in normalized_text.split('\n'):
+        line = line.strip()
+        if not line:
+            continue
+        if 'skill' in line or 'technology' in line or 'tools' in line:
+            likely_skill_chunks.append(line)
+
+    # If resume text is flattened into one line, still inspect the whole text,
+    # but split aggressively by common list separators.
+    if not likely_skill_chunks:
+        likely_skill_chunks = [normalized_text]
+
+    for chunk in likely_skill_chunks:
+        # Remove heading prefix if present (e.g., "Technical Skills:").
+        if ':' in chunk:
+            chunk = chunk.split(':', 1)[1]
+
+        raw_candidates = re.split(r'[,|\n•;]+', chunk)
+        for raw in raw_candidates:
+            candidate = normalize_skill_name(raw.strip(" .,:;()[]{}\t"))
+            if is_valid_fallback_skill(candidate):
+                found_skills.add(candidate)
+
+    # Safety cap to avoid runaway extraction from noisy resumes.
+    if len(found_skills) > 50:
+        found_skills = set(sorted(found_skills)[:50])
     
     return sorted(list(found_skills))
 
@@ -226,6 +350,25 @@ def find_matching_users(desired_skill: str, all_skills: List[Tuple[int, str, Lis
     Returns list of (user_id, similarity_score) tuples.
     """
     desired_embedding = get_skill_embedding(desired_skill)
+    desired_text = (desired_skill or '').strip().lower()
+
+    def lexical_score(skill_name: str) -> float:
+        candidate = (skill_name or '').strip().lower()
+        if not desired_text or not candidate:
+            return 0.0
+        if candidate == desired_text:
+            return 1.0
+        if desired_text in candidate or candidate in desired_text:
+            return 0.85
+        desired_parts = set(desired_text.replace('/', ' ').replace('-', ' ').split())
+        candidate_parts = set(candidate.replace('/', ' ').replace('-', ' ').split())
+        if desired_parts and candidate_parts:
+            overlap = len(desired_parts & candidate_parts)
+            if overlap:
+                return overlap / max(len(desired_parts), len(candidate_parts))
+        if candidate.startswith(desired_text) or desired_text.startswith(candidate):
+            return 0.75
+        return 0.0
     
     matches = []
     for user_id, skill_name, embedding in all_skills:
@@ -234,12 +377,8 @@ def find_matching_users(desired_skill: str, all_skills: List[Tuple[int, str, Lis
         if embedding and desired_embedding:
             similarity = calculate_skill_similarity(embedding, desired_embedding)
         else:
-            # Fallback: give a high score for exact name matches (case-insensitive)
-            try:
-                if skill_name and skill_name.lower() == desired_skill.lower():
-                    similarity = 1.0
-            except Exception:
-                similarity = 0.0
+            # Fallback: use lexical similarity when embeddings are unavailable
+            similarity = lexical_score(skill_name)
 
         matches.append((user_id, similarity))
 
@@ -255,6 +394,26 @@ def find_matching_users_for_skills(desired_skills: List[str], all_skills: List[T
     """
     # Precompute embeddings for desired skills
     desired_embeddings = {s: get_skill_embedding(s) for s in desired_skills}
+    desired_skill_text = {s: (s or '').strip().lower() for s in desired_skills}
+
+    def lexical_score(skill_name: str, desired_skill: str) -> float:
+        candidate = (skill_name or '').strip().lower()
+        desired_text = desired_skill_text.get(desired_skill, '')
+        if not desired_text or not candidate:
+            return 0.0
+        if candidate == desired_text:
+            return 1.0
+        if desired_text in candidate or candidate in desired_text:
+            return 0.85
+        desired_parts = set(desired_text.replace('/', ' ').replace('-', ' ').split())
+        candidate_parts = set(candidate.replace('/', ' ').replace('-', ' ').split())
+        if desired_parts and candidate_parts:
+            overlap = len(desired_parts & candidate_parts)
+            if overlap:
+                return overlap / max(len(desired_parts), len(candidate_parts))
+        if candidate.startswith(desired_text) or desired_text.startswith(candidate):
+            return 0.75
+        return 0.0
 
     # Map user_id -> desired_skill -> max similarity observed
     user_skill_max = {}
@@ -267,14 +426,16 @@ def find_matching_users_for_skills(desired_skills: List[str], all_skills: List[T
         for ds in desired_skills:
             ds_embed = desired_embeddings.get(ds) or []
             
-            # Skip if embeddings are missing
-            if not ds_embed or not embedding:
-                continue
-            
-            try:
-                sim = calculate_skill_similarity(embedding, ds_embed)
-            except Exception:
-                sim = 0.0
+            # If embeddings are available, use semantic similarity.
+            # Otherwise fall back to lexical similarity so exact skill matches
+            # still produce non-zero scores when the model cannot load.
+            if ds_embed and embedding:
+                try:
+                    sim = calculate_skill_similarity(embedding, ds_embed)
+                except Exception:
+                    sim = 0.0
+            else:
+                sim = lexical_score(skill_name, ds)
 
             # update max similarity for this desired skill for this user
             if sim > user_skill_max[user_id][ds]:
